@@ -1,0 +1,25 @@
+name: Update BAKED_IMAGES
+
+on:
+  push:
+    paths:
+      - 'img/**'
+
+jobs:
+  update-images:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update BAKED_IMAGES in index.html
+        run: python .github/scripts/update_images.py
+
+      - name: Commit updated index.html
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git add index.html
+          git diff --staged --quiet || git commit -m "Auto-update BAKED_IMAGES from img/ folders"
+          git push
