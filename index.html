@@ -1068,17 +1068,6 @@ window.tankDB = {
     if (options.categories && options.categories.length > 0) {
       pool = pool.filter(v => options.categories.includes(v.type));
     }
-    if (options.diff) {
-      const FALLBACK = { leicht: 'mittel', mittel: 'leicht', schwer: 'mittel' };
-      const exact = pool.filter(v => v.diff === options.diff);
-      if (exact.length >= 4) {
-        pool = exact;
-      } else {
-        const fb = FALLBACK[options.diff];
-        const extended = pool.filter(v => v.diff === options.diff || v.diff === fb);
-        pool = extended.length >= 4 ? extended : pool;
-      }
-    }
     return pool;
   },
 
