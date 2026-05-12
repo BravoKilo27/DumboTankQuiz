@@ -498,7 +498,7 @@ tr:hover td { background: rgba(255,255,255,.03); }
           <button class="btn btn-secondary btn-sm" style="flex-shrink:0;" onclick="AdminPanel.addImageUrl()">Hinzufügen</button>
         </div>
         <p style="font-size:.75rem;color:var(--text-dim);margin-top:6px;margin-bottom:0;">
-          Tipp: Lade Bilder in den Fahrzeug-Ordner unter <code>img/{id}_{name}/</code> hoch → URL: <code>img/s023_T-72/bild1.jpg</code> (relativ) oder volle URL
+          Tipp: Bilder im Repo liegen unter <code>img/s023_T-72/leicht/bild.jpg</code> – diese URL einfach so eingeben. Oder volle GitHub-Pages-URL: <code>https://BravoKilo27.github.io/DumboTankQuiz/img/s023_T-72/leicht/bild.jpg</code>
         </p>
       </div>
       <!-- Datei-Upload (für einzelne Bilder / lokale Tests) -->
@@ -1347,7 +1347,7 @@ const AdminPanel = {
       wrap.className = 'img-thumb';
       const d = img.diff || 'mittel';
       wrap.innerHTML = `
-        <img src="${img.src}" alt="Bild ${idx+1}">
+        <img src="${img.src}" alt="Bild ${idx+1}" onerror="this.style.opacity='.3';this.title='Bild nicht gefunden: '+this.src;this.parentElement.style.border='2px solid #c0392b'">
         <select class="img-diff-sel" title="Schwierigkeit dieses Bildes"
           onchange="AdminPanel.setImageDiff('${id}', ${idx}, this.value)">
           <option value="leicht"${d==='leicht'?' selected':''}>🟢 Leicht</option>
@@ -1709,6 +1709,7 @@ const UI = {
       imgSrc = SVG_PLACEHOLDER(q.vehicle.name, '#4a5230');
     }
     const img = document.getElementById('vehicle-img');
+    img.onerror = () => { img.src = SVG_PLACEHOLDER(q.vehicle.name, '#4a5230'); };
     img.src = imgSrc;
     document.getElementById('vehicle-img-wrap').classList.remove('revealed');
 
