@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panzer-Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ===================== RESET & VARIABLEN ===================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-dark:    #1a1c18;
+  --bg-card:    #252820;
+  --bg-panel:   #2e3128;
+  --border:     #3d4235;
+  --olive:      #4a5230;
+  --olive-lt:   #6b7345;
+  --amber:      #d4a017;
+  --amber-lt:   #f0c040;
+  --amber-dk:   #a07a10;
+  --green-ok:   #3a7d44;
+  --red-err:    #8b2020;
+  --text:       #d8d5c8;
+  --text-dim:   #8a8778;
+  --text-head:  #f0ede0;
+  --radius:     6px;
+  --shadow:     0 4px 16px rgba(0,0,0,.5);
+}
+
+html, body { height: 100%; background: var(--bg-dark); color: var(--text); font-family: 'Roboto', sans-serif; font-size: 16px; }
+
+/* ===================== LAYOUT ===================== */
+#app { min-height: 100vh; display: flex; flex-direction: column; }
+
+.screen { display: none; flex-direction: column; flex: 1; padding: 16px; max-width: 900px; margin: 0 auto; width: 100%; }
+.screen.active { display: flex; }
+
+/* ===================== HEADER ===================== */
+#header { background: var(--bg-panel); border-bottom: 2px solid var(--olive); padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+#header-title { font-family: 'Oswald', sans-serif; font-size: 1.5rem; color: var(--amber); letter-spacing: 2px; cursor: pointer; user-select: none; }
+#header-title span { color: var(--text-dim); font-size: .85rem; display: block; letter-spacing: 1px; }
+#header-stats { display: flex; gap: 20px; align-items: center; }
+.stat-badge { font-family: 'Oswald', sans-serif; font-size: .95rem; color: var(--text-dim); }
+.stat-badge strong { color: var(--amber); font-size: 1.1rem; }
+.streak-fire { color: #ff7700; }
+
+/* ===================== BUTTONS ===================== */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 22px; border: none; border-radius: var(--radius); font-family: 'Oswald', sans-serif; font-size: 1rem; letter-spacing: 1px; cursor: pointer; transition: all .2s; text-transform: uppercase; }
+.btn-primary   { background: var(--amber); color: #111; }
+.btn-primary:hover { background: var(--amber-lt); }
+.btn-secondary { background: var(--olive); color: var(--text); border: 1px solid var(--olive-lt); }
+.btn-secondary:hover { background: var(--olive-lt); }
+.btn-danger    { background: var(--red-err); color: #fff; }
+.btn-danger:hover { filter: brightness(1.2); }
+.btn-ghost     { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--bg-panel); color: var(--text); }
+.btn-sm { padding: 6px 14px; font-size: .85rem; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ===================== STARTSCREEN ===================== */
+#screen-start { justify-content: center; align-items: center; gap: 24px; }
+.start-logo { font-family: 'Oswald', sans-serif; font-size: 3.5rem; color: var(--amber); text-align: center; text-shadow: 0 0 30px rgba(212,160,23,.3); letter-spacing: 4px; }
+.start-logo .sub { font-size: 1rem; color: var(--text-dim); letter-spacing: 6px; margin-top: -8px; }
+.start-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 16px; }
+.start-card h2 { font-family: 'Oswald', sans-serif; color: var(--text-head); font-size: 1.2rem; letter-spacing: 1px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: .85rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+select, input[type=text], input[type=password], input[type=number], textarea {
+  background: var(--bg-dark); border: 1px solid var(--border); color: var(--text);
+  padding: 9px 12px; border-radius: var(--radius); font-size: .95rem; font-family: 'Roboto', sans-serif; width: 100%;
+  transition: border-color .2s;
+}
+select:focus, input:focus, textarea:focus { outline: none; border-color: var(--amber); }
+select option { background: var(--bg-dark); }
+.highscore-box { background: var(--bg-dark); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; max-height: 150px; overflow-y: auto; }
+.hs-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: .85rem; color: var(--text-dim); }
+.hs-row:last-child { border-bottom: none; }
+.hs-row .hs-score { color: var(--amber); font-family: 'Oswald', sans-serif; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ===================== QUIZ SCREEN ===================== */
+#screen-quiz { gap: 16px; }
+.quiz-meta { display: flex; justify-content: space-between; align-items: center; font-size: .85rem; color: var(--text-dim); }
+.progress-bar { height: 6px; background: var(--bg-panel); border-radius: 3px; overflow: hidden; border: 1px solid var(--border); }
+.progress-fill { height: 100%; background: var(--amber); border-radius: 3px; transition: width .4s ease; }
+.question-counter { font-family: 'Oswald', sans-serif; color: var(--text-dim); }
+
+/* Foto-Bereich */
+.vehicle-image-wrap { position: relative; background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; max-height: 360px; display: flex; align-items: center; justify-content: center; }
+.vehicle-image-wrap img { max-width: 100%; max-height: 360px; object-fit: contain; display: block; transition: opacity .3s; }
+.img-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .3s; pointer-events: none; }
+.vehicle-image-wrap.revealed .img-overlay { opacity: 1; }
+
+/* Antwort-Buttons */
+.answers-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.answer-btn { background: var(--bg-card); border: 2px solid var(--border); color: var(--text); padding: 14px 16px; border-radius: var(--radius); font-size: .95rem; font-family: 'Roboto', sans-serif; cursor: pointer; text-align: left; transition: all .2s; }
+.answer-btn:hover:not(:disabled) { border-color: var(--amber); color: var(--amber-lt); }
+.answer-btn.correct  { background: rgba(58,125,68,.25); border-color: var(--green-ok); color: #6fcf7e; }
+.answer-btn.wrong    { background: rgba(139,32,32,.25); border-color: var(--red-err); color: #e06060; }
+.answer-btn:disabled { cursor: default; }
+
+/* Feedback-Box */
+.feedback-box { background: var(--bg-panel); border-left: 4px solid var(--amber); border-radius: var(--radius); padding: 14px 16px; font-size: .9rem; display: none; animation: slideIn .25s ease; }
+.feedback-box.show { display: block; }
+.feedback-box .fb-verdict { font-family: 'Oswald', sans-serif; font-size: 1.1rem; margin-bottom: 6px; }
+.fb-correct .fb-verdict { color: #6fcf7e; }
+.fb-wrong   .fb-verdict { color: #e06060; }
+.feedback-box .fb-info  { color: var(--text-dim); font-size: .85rem; line-height: 1.5; }
+
+@keyframes slideIn { from { transform: translateY(-8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ===================== ERGEBNIS-SCREEN ===================== */
+#screen-result { justify-content: center; align-items: center; gap: 20px; }
+.result-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; width: 100%; max-width: 520px; text-align: center; display: flex; flex-direction: column; gap: 16px; }
+.result-title { font-family: 'Oswald', sans-serif; font-size: 2rem; color: var(--amber); letter-spacing: 2px; }
+.result-score { font-family: 'Oswald', sans-serif; font-size: 3.5rem; color: var(--text-head); }
+.result-score span { font-size: 1.2rem; color: var(--text-dim); }
+.result-stars { font-size: 2rem; letter-spacing: 4px; }
+.result-details { display: flex; justify-content: space-around; background: var(--bg-dark); padding: 12px; border-radius: var(--radius); }
+.result-stat { text-align: center; }
+.result-stat .val { font-family: 'Oswald', sans-serif; font-size: 1.4rem; color: var(--amber); }
+.result-stat .lbl { font-size: .75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+.name-input-wrap { display: flex; gap: 8px; }
+.name-input-wrap input { flex: 1; }
+
+/* ===================== ADMIN SCREEN ===================== */
+#screen-admin { gap: 20px; }
+#screen-login  { justify-content: center; align-items: center; gap: 16px; }
+.login-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 14px; }
+.login-card h2 { font-family: 'Oswald', sans-serif; color: var(--amber); }
+
+.admin-tabs { display: flex; gap: 2px; border-bottom: 2px solid var(--border); }
+.admin-tab { font-family: 'Oswald', sans-serif; letter-spacing: 1px; padding: 10px 20px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; font-size: .95rem; }
+.admin-tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+
+.tab-panel { display: none; flex-direction: column; gap: 16px; }
+.tab-panel.active { display: flex; }
+
+.admin-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.admin-card h3 { font-family: 'Oswald', sans-serif; color: var(--text-head); letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+/* Bild-Upload */
+.image-upload-area { border: 2px dashed var(--border); border-radius: var(--radius); padding: 20px; text-align: center; color: var(--text-dim); cursor: pointer; transition: all .2s; }
+.image-upload-area:hover { border-color: var(--amber); color: var(--text); }
+.image-upload-area input[type=file] { display: none; }
+.image-previews { display: flex; flex-wrap: wrap; gap: 8px; }
+.img-thumb { position: relative; width: 110px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); display: flex; flex-direction: column; }
+.img-thumb img { width: 100%; height: 75px; object-fit: cover; display: block; }
+.img-diff-sel { width: 100%; background: rgba(20,22,18,.92); border: none; border-top: 1px solid var(--border); color: var(--amber); font-size: .7rem; padding: 3px 4px; cursor: pointer; appearance: none; text-align: center; }
+.img-diff-sel:focus { outline: 1px solid var(--amber); }
+.img-diff-sel option { background: var(--bg-dark); color: var(--text); }
+.img-thumb .del-btn { position: absolute; top: 2px; right: 2px; background: rgba(139,32,32,.85); border: none; color: #fff; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; font-size: .75rem; display: flex; align-items: center; justify-content: center; }
+.img-thumb .del-btn:hover { background: var(--red-err); }
+
+/* Fahrzeug-Tabelle */
+.vehicles-table { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+th { background: var(--bg-dark); color: var(--text-dim); text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); font-family: 'Oswald', sans-serif; letter-spacing: 1px; font-weight: 400; text-transform: uppercase; }
+td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:hover td { background: rgba(255,255,255,.03); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: .75rem; font-family: 'Oswald', sans-serif; }
+.badge-type   { background: rgba(74,82,48,.5); color: #b0ba80; border: 1px solid var(--olive); }
+.badge-nation { background: rgba(50,60,80,.5); color: #90a0c0; border: 1px solid #405070; }
+.badge-era    { background: rgba(80,50,30,.5); color: #c0a070; border: 1px solid #604020; }
+.badge-diff-leicht { background: rgba(30,80,40,.5); color: #70d080; border: 1px solid #205030; }
+.badge-diff-mittel { background: rgba(80,60,20,.5); color: #d0a030; border: 1px solid #604010; }
+.badge-diff-schwer { background: rgba(80,20,20,.5); color: #d05050; border: 1px solid #601010; }
+
+/* Toast */
+.toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+.toast { background: var(--bg-panel); border: 1px solid var(--border); border-left: 4px solid var(--amber); border-radius: var(--radius); padding: 12px 16px; font-size: .9rem; max-width: 320px; animation: toastIn .25s ease; box-shadow: var(--shadow); }
+.toast.success { border-left-color: var(--green-ok); }
+.toast.error   { border-left-color: var(--red-err); }
+@keyframes toastIn { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 500; display: none; align-items: center; justify-content: center; padding: 16px; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; box-shadow: var(--shadow); }
+.modal h3 { font-family: 'Oswald', sans-serif; color: var(--amber); letter-spacing: 1px; }
+.modal-footer { display: flex; gap: 10px; justify-content: flex-end; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: var(--olive); border-radius: 3px; }
+
+/* Responsive */
+@media (max-width: 600px) {
+  .answers-grid { grid-template-columns: 1fr; }
+  .form-row, .form-row-3 { grid-template-columns: 1fr; }
+  .start-logo { font-size: 2.5rem; }
+  .result-score { font-size: 2.5rem; }
+  #header-title { font-size: 1.2rem; }
+  #header-stats { gap: 10px; }
+  .stat-badge { font-size: .8rem; }
+}
+
+/* Divider */
+.divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+
+/* Filterpanel */
+.filter-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+.filter-row .form-group { flex: 1; min-width: 120px; }
+
+/* Empty state */
+.empty-state { text-align: center; color: var(--text-dim); padding: 32px; font-size: .9rem; }
+.empty-state .icon { font-size: 2.5rem; margin-bottom: 8px; }
+
+/* Kategorie-Checkboxen */
+.cat-checkboxes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+.cat-cb-label { display: flex; align-items: center; gap: 6px; background: var(--bg-dark); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 8px; cursor: pointer; font-size: .78rem; transition: border-color .2s, color .2s; white-space: normal; word-break: break-word; }
+.cat-cb-label:hover { border-color: var(--olive-lt); color: var(--text); }
+.cat-cb-label input[type=checkbox] { accent-color: var(--amber); width: 13px; height: 13px; flex-shrink: 0; }
+.cat-cb-label.active { border-color: var(--amber); color: var(--amber); background: rgba(212,160,23,.08); }
+.cat-count { font-size: .78rem; color: var(--text-dim); text-align: right; margin-top: 2px; }
+@media (max-width: 420px) { .cat-checkboxes { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<div id="header">
+  <div id="header-title" onclick="UI.titleClick()">
+    &#9651; PANZER-QUIZ
+    <span>Fahrzeugidentifikations-Training</span>
+  </div>
+  <div id="header-stats" style="display:none;">
+    <div class="stat-badge">Punkte: <strong id="stat-score">0</strong></div>
+    <div class="stat-badge">Frage: <strong id="stat-q">1</strong>/<strong id="stat-total">10</strong></div>
+    <div class="stat-badge streak-fire" id="stat-streak-wrap">Streak: <strong id="stat-streak">0</strong> 🔥</div>
+  </div>
+</div>
+
+<div id="app">
+
+<!-- ==================== START ==================== -->
+<div id="screen-start" class="screen active">
+  <div class="start-logo">&#9651; PANZER-QUIZ<div class="sub">FAHRZEUGIDENTIFIKATION</div></div>
+  <div class="start-card">
+    <h2>Neue Runde</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Schwierigkeit</label>
+        <select id="start-diff">
+          <option value="leicht">Leicht – Nur Typ</option>
+          <option value="mittel" selected>Mittel – Alle</option>
+          <option value="schwer">Schwer – Exakter Name</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Fragen pro Runde</label>
+        <select id="start-count">
+          <option value="5">5 Fragen</option>
+          <option value="10" selected>10 Fragen</option>
+          <option value="15">15 Fragen</option>
+          <option value="20">20 Fragen</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Fahrzeugkategorien <span style="font-weight:400;text-transform:none;letter-spacing:0">(mehrere wählbar · leer = alle)</span></label>
+      <div class="cat-checkboxes" id="cat-checkboxes">
+        <label class="cat-cb-label" onclick="UI.toggleCatLabel(this)"><input type="checkbox" class="cat-cb" value="MBT"> MBT <span style="color:var(--text-dim);font-size:.7em;white-space:nowrap">(Kampfpanzer)</span></label>
+        <label class="cat-cb-label" onclick="UI.toggleCatLabel(this)"><input type="checkbox" class="cat-cb" value="IFV"> IFV <span style="color:var(--text-dim);font-size:.7em;white-space:nowrap">(Schützenpanzer)</span></label>
+        <label class="cat-cb-label" onclick="UI.toggleCatLabel(this)"><input type="checkbox" class="cat-cb" value="APC"> APC <span style="color:var(--text-dim);font-size:.7em;white-space:nowrap">(Truppentransporter)</span></label>
+        <label class="cat-cb-label" onclick="UI.toggleCatLabel(this)"><input type="checkbox" class="cat-cb" value="IR"> IR <span style="color:var(--text-dim);font-size:.7em;white-space:nowrap">(Aufklärung)</span></label>
+        <label class="cat-cb-label" onclick="UI.toggleCatLabel(this)"><input type="checkbox" class="cat-cb" value="Artillery"> Artillery <span style="color:var(--text-dim);font-size:.7em;white-space:nowrap">(Artillerie)</span></label>
+        <label class="cat-cb-label" onclick="UI.toggleCatLabel(this)"><input type="checkbox" class="cat-cb" value="Air Defence"> Air Defence <span style="color:var(--text-dim);font-size:.7em;white-space:nowrap">(Luftabwehr)</span></label>
+        <label class="cat-cb-label" onclick="UI.toggleCatLabel(this)"><input type="checkbox" class="cat-cb" value="Mine Clearing"> Mine Clearing <span style="color:var(--text-dim);font-size:.7em;white-space:nowrap">(Minenräumer)</span></label>
+      </div>
+      <div class="cat-count" id="cat-count"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="UI.startQuiz()" id="btn-start">&#9654; Quiz Starten</button>
+      <button class="btn btn-secondary" onclick="UI.showAdmin()">&#9881; Admin</button>
+    </div>
+    <hr class="divider">
+    <div>
+      <label style="font-size:.8rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Bestenliste</label>
+      <div class="highscore-box" id="hs-list"><div class="empty-state" style="padding:8px">Noch keine Einträge</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== QUIZ ==================== -->
+<div id="screen-quiz" class="screen">
+  <div class="quiz-meta">
+    <span class="question-counter">Frage <span id="q-num">1</span> von <span id="q-total">10</span></span>
+    <span id="q-diff-badge"></span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="q-progress" style="width:0%"></div></div>
+  <div class="vehicle-image-wrap" id="vehicle-img-wrap">
+    <img id="vehicle-img" src="" alt="Fahrzeugfoto">
+  </div>
+  <div class="answers-grid" id="answers-grid"></div>
+  <div class="feedback-box" id="feedback-box">
+    <div class="fb-verdict" id="fb-verdict"></div>
+    <div class="fb-info" id="fb-info"></div>
+  </div>
+  <div style="display:flex;justify-content:flex-end;gap:10px;">
+    <button class="btn btn-ghost btn-sm" onclick="UI.abortQuiz()">&#10005; Abbrechen</button>
+    <button class="btn btn-primary btn-sm" id="btn-next" onclick="QuizEngine.next()" style="display:none;">Weiter &#8594;</button>
+  </div>
+</div>
+
+<!-- ==================== ERGEBNIS ==================== -->
+<div id="screen-result" class="screen">
+  <div class="result-card">
+    <div class="result-title">RUNDE BEENDET</div>
+    <div class="result-stars" id="res-stars">&#11088;&#11088;&#11088;</div>
+    <div class="result-score"><span id="res-correct">8</span> / <span id="res-total">10</span> <span>Richtig</span></div>
+    <div class="result-details">
+      <div class="result-stat"><div class="val" id="res-pct">80%</div><div class="lbl">Trefferquote</div></div>
+      <div class="result-stat"><div class="val" id="res-streak">5</div><div class="lbl">Max. Streak</div></div>
+      <div class="result-stat"><div class="val" id="res-pts">850</div><div class="lbl">Punkte</div></div>
+    </div>
+    <div>
+      <label style="font-size:.8rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Name für Bestenliste</label>
+      <div class="name-input-wrap">
+        <input type="text" id="hs-name" placeholder="Dein Name..." maxlength="24">
+        <button class="btn btn-secondary btn-sm" onclick="UI.saveScore()">Speichern</button>
+      </div>
+    </div>
+    <div class="btn-row" style="justify-content:center;">
+      <button class="btn btn-primary" onclick="UI.showStart()">&#8635; Neue Runde</button>
+      <button class="btn btn-ghost" onclick="UI.showAdmin()">&#9881; Admin</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== LOGIN ==================== -->
+<div id="screen-login" class="screen">
+  <div class="login-card">
+    <h2>&#128274; Admin-Bereich</h2>
+    <div class="form-group">
+      <label>Passwort</label>
+      <input type="password" id="login-pw" placeholder="Passwort eingeben..." onkeydown="if(event.key==='Enter')UI.doLogin()">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="UI.doLogin()">Anmelden</button>
+      <button class="btn btn-ghost" onclick="UI.showStart()">Zurück</button>
+    </div>
+    <div id="login-err" style="color:#e06060;font-size:.85rem;display:none;">Falsches Passwort!</div>
+  </div>
+</div>
+
+<!-- ==================== ADMIN ==================== -->
+<div id="screen-admin" class="screen">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+    <h2 style="font-family:'Oswald',sans-serif;color:var(--amber);letter-spacing:2px;">&#9881; ADMIN-PANEL</h2>
+    <div class="btn-row">
+      <button class="btn btn-secondary btn-sm" onclick="AdminPanel.exportDB()">&#8659; Export JSON</button>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file').click()">&#8657; Import JSON</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="AdminPanel.importDB(this)">
+      <button class="btn btn-primary btn-sm" onclick="AdminPanel.exportWithImages()">&#128190; Export mit Bildern</button>
+      <button class="btn btn-ghost btn-sm" onclick="UI.showStart()">&#8592; Zurück</button>
+    </div>
+  </div>
+
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="AdminPanel.switchTab('vehicles')" id="tab-vehicles">Fahrzeuge</button>
+    <button class="admin-tab" onclick="AdminPanel.switchTab('add')"      id="tab-add">+ Hinzufügen</button>
+    <button class="admin-tab" onclick="AdminPanel.switchTab('images')"   id="tab-images">Bilder</button>
+    <button class="admin-tab" onclick="AdminPanel.switchTab('settings')" id="tab-settings">Einstellungen</button>
+  </div>
+
+  <!-- TAB: Fahrzeugliste -->
+  <div class="tab-panel active" id="tabp-vehicles">
+    <div class="admin-card">
+      <h3>Fahrzeugdatenbank (<span id="v-count">0</span> Einträge)</h3>
+      <div class="filter-row">
+        <div class="form-group"><label>Suche</label><input type="text" id="v-search" placeholder="Name suchen..." oninput="AdminPanel.renderTable()"></div>
+        <div class="form-group">
+          <label>Kategorie</label>
+          <select id="v-filter-type" onchange="AdminPanel.renderTable()">
+            <option value="">Alle Kategorien</option>
+            <option value="MBT">MBT – Kampfpanzer</option>
+            <option value="IFV">IFV – Schützenpanzer</option>
+            <option value="APC">APC – Transporter</option>
+            <option value="IR">IR – Aufklärung</option>
+            <option value="Artillery">Artillery – Artillerie</option>
+            <option value="Air Defence">Air Defence – Luftabwehr</option>
+            <option value="Mine Clearing">Mine Clearing – Minenräumer</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Schwierigkeit</label>
+          <select id="v-filter-diff" onchange="AdminPanel.renderTable()">
+            <option value="">Alle</option>
+            <option value="leicht">Leicht</option>
+            <option value="mittel">Mittel</option>
+            <option value="schwer">Schwer</option>
+          </select>
+        </div>
+      </div>
+      <div class="vehicles-table">
+        <table id="vehicles-table">
+          <thead><tr>
+            <th>Name / Ära</th><th>Kategorie</th><th>Diff.</th><th>Bilder (L/M/S)</th><th>Aktionen</th>
+          </tr></thead>
+          <tbody id="vehicles-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Fahrzeug hinzufügen/bearbeiten -->
+  <div class="tab-panel" id="tabp-add">
+    <div class="admin-card">
+      <h3 id="add-form-title">Neues Fahrzeug</h3>
+      <input type="hidden" id="edit-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Name *</label>
+          <input type="text" id="f-name" placeholder="z.B. Tiger I">
+        </div>
+        <div class="form-group">
+          <label>Typ *</label>
+          <select id="f-type">
+            <option value="MBT">MBT – Kampfpanzer</option>
+            <option value="IFV">IFV – Schützenpanzer</option>
+            <option value="APC">APC – Truppentransporter</option>
+            <option value="IR">IR – Aufklärung</option>
+            <option value="Artillery">Artillery – Artillerie</option>
+            <option value="Air Defence">Air Defence – Luftabwehr</option>
+            <option value="Mine Clearing">Mine Clearing – Minenräumer</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nation *</label>
+          <input type="text" id="f-nation" placeholder="z.B. Deutschland">
+        </div>
+        <div class="form-group">
+          <label>Ära *</label>
+          <select id="f-era">
+            <option value="WW1">WW1</option>
+            <option value="WW2">WW2</option>
+            <option value="Kalter Krieg">Kalter Krieg</option>
+            <option value="Modern">Modern</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Schwierigkeit</label>
+        <select id="f-diff">
+          <option value="leicht">Leicht</option>
+          <option value="mittel" selected>Mittel</option>
+          <option value="schwer">Schwer</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Kurzbeschreibung (als Feedback angezeigt)</label>
+        <textarea id="f-desc" rows="3" placeholder="Kurze historische Info..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Bewaffnung</label>
+          <textarea id="f-weapon" rows="2" placeholder="z.B. 88-mm-KwK 36 L/56, 2× MG 34"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Panzerung</label>
+          <textarea id="f-armor" rows="2" placeholder="z.B. Front: 100 mm, Seite: 60 mm"></textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="AdminPanel.saveVehicle()">&#10003; Speichern</button>
+        <button class="btn btn-ghost"   onclick="AdminPanel.resetForm()">&#10005; Zurücksetzen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Bilder -->
+  <div class="tab-panel" id="tabp-images">
+    <div class="admin-card">
+      <h3>Bilder zuweisen</h3>
+      <div class="form-group">
+        <label>Fahrzeug auswählen</label>
+        <select id="img-vehicle-select" onchange="AdminPanel.loadImagePreview()">
+          <option value="">-- Fahrzeug wählen --</option>
+        </select>
+      </div>
+      <!-- URL-Eingabe (empfohlen für viele Bilder – z. B. GitHub-Repo) -->
+      <div style="background:var(--bg-dark);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;">
+        <label style="font-size:.8rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">&#127758; URL hinzufügen <span style="font-weight:400;text-transform:none;letter-spacing:0">(empfohlen · GitHub, Cloudinary, etc.)</span></label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="img-url-input" placeholder="https://deinname.github.io/tank-quiz/img/t72_1.jpg" style="font-size:.82rem;">
+          <select id="img-url-diff" style="width:120px;flex-shrink:0;">
+            <option value="leicht">🟢 Leicht</option>
+            <option value="mittel" selected>🟡 Mittel</option>
+            <option value="schwer">🔴 Schwer</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" style="flex-shrink:0;" onclick="AdminPanel.addImageUrl()">Hinzufügen</button>
+        </div>
+        <p style="font-size:.75rem;color:var(--text-dim);margin-top:6px;margin-bottom:0;">
+          Tipp: Lade Bilder in deinem GitHub-Repo in den Ordner <code>img/</code> hoch → URL: <code>img/dateiname.jpg</code> (relativ) oder volle URL
+        </p>
+      </div>
+      <!-- Datei-Upload (für einzelne Bilder / lokale Tests) -->
+      <div class="image-upload-area" id="upload-area" onclick="document.getElementById('img-upload').click()">
+        <input type="file" id="img-upload" accept="image/*" multiple onchange="AdminPanel.uploadImages(this)">
+        <div>&#128444; Datei hochladen (max. ~1 MB pro Bild – lokal gespeichert)</div>
+        <div style="font-size:.8rem;margin-top:4px;color:var(--text-dim)">JPG, PNG, WebP · wird komprimiert · für wenige Testbilder</div>
+      </div>
+      <div class="image-previews" id="img-previews"></div>
+    </div>
+  </div>
+
+  <!-- TAB: Einstellungen -->
+  <div class="tab-panel" id="tabp-settings">
+    <div class="admin-card">
+      <h3>Einstellungen</h3>
+      <div class="form-group">
+        <label>Firebase Datenbank-URL <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-dim)">(für globale Bestenliste)</span></label>
+        <p style="font-size:.8rem;color:var(--text-dim);margin-bottom:6px;">Kostenlos einrichten auf <strong>firebase.google.com</strong> → Projekt → Realtime Database → Test-Modus</p>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="fb-url" placeholder="https://dein-projekt-default-rtdb.firebaseio.com" style="font-size:.8rem;">
+          <button class="btn btn-secondary btn-sm" onclick="AdminPanel.setFirebaseUrl()">Speichern</button>
+        </div>
+      </div>
+      <hr class="divider">
+      <div class="form-group">
+        <label>Admin-Passwort ändern</label>
+        <div style="display:flex;gap:8px;">
+          <input type="password" id="new-pw" placeholder="Neues Passwort...">
+          <button class="btn btn-secondary btn-sm" onclick="AdminPanel.changePw()">Ändern</button>
+        </div>
+      </div>
+      <hr class="divider">
+      <div class="form-group">
+        <label>Datenbank zurücksetzen</label>
+        <p style="font-size:.85rem;color:var(--text-dim);margin-bottom:8px;">Löscht alle Fahrzeuge und lädt die Beispieldatenbank neu. Bilder werden ebenfalls gelöscht.</p>
+        <button class="btn btn-danger btn-sm" onclick="AdminPanel.resetDB()">&#9888; Datenbank zurücksetzen</button>
+      </div>
+      <hr class="divider">
+      <div class="form-group">
+        <label>Highscores löschen</label>
+        <button class="btn btn-danger btn-sm" onclick="AdminPanel.clearScores()">&#9888; Highscores löschen</button>
+      </div>
+    </div>
+    <div class="admin-card">
+      <h3>Info</h3>
+      <div style="font-size:.85rem;color:var(--text-dim);line-height:1.7;">
+        <p>Fahrzeuge in DB: <strong id="info-count" style="color:var(--amber)">0</strong></p>
+        <p>localStorage-Keys: <code>tankquiz_db</code>, <code>tankquiz_scores</code>, <code>tankquiz_images_{id}</code></p>
+        <p>Zugang über Titelklick (3×) oder Passwort-Dialog</p>
+        <p>Standard-Passwort: <code>admin123</code></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <h3>Fahrzeug bearbeiten</h3>
+    <div id="edit-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="UI.closeModal()">Abbrechen</button>
+      <button class="btn btn-primary btn-sm" onclick="AdminPanel.saveModal()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== JAVASCRIPT ==================== -->
+<script>
+'use strict';
+
+// ===================== STANDARDDATENBANK =====================
+// Platzhalter-SVG-Bilder für alle Beispielfahrzeuge
+const SVG_PLACEHOLDER = (name, color) => {
+  const c = color || '#4a5230';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 220" width="400" height="220">
+    <rect width="400" height="220" fill="#1a1c18"/>
+    <rect x="60" y="100" width="280" height="60" rx="6" fill="${c}"/>
+    <rect x="130" y="65" width="160" height="50" rx="4" fill="${c}" opacity=".85"/>
+    <rect x="170" y="50" width="80" height="20" rx="3" fill="${c}" opacity=".7"/>
+    <circle cx="100" cy="162" r="22" fill="#222" stroke="${c}" stroke-width="4"/>
+    <circle cx="100" cy="162" r="10" fill="#333"/>
+    <circle cx="200" cy="162" r="22" fill="#222" stroke="${c}" stroke-width="4"/>
+    <circle cx="200" cy="162" r="10" fill="#333"/>
+    <circle cx="300" cy="162" r="22" fill="#222" stroke="${c}" stroke-width="4"/>
+    <circle cx="300" cy="162" r="10" fill="#333"/>
+    <rect x="60" y="152" width="280" height="12" fill="${c}" opacity=".4"/>
+    <text x="200" y="200" font-family="monospace" font-size="13" fill="#d4a017" text-anchor="middle" opacity=".8">${name.toUpperCase()}</text>
+    <text x="200" y="32" font-family="monospace" font-size="11" fill="#666" text-anchor="middle">PLATZHALTER – Bild im Admin hochladen</text>
+  </svg>`;
+  return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+};
+
+// Vordefinierte Fahrzeuge – UdSSR / Russland (vollständige Datenbank)
+const DEFAULT_VEHICLES = [
+  // ── WW2 ──────────────────────────────────────────────────────────────────
+  { id:'s005', name:'T-60',               type:'MBT',           nation:'UdSSR',       era:'WW2',          diff:'leicht',
+    weapon:'20-mm-TNSch-1-Maschinenkanone, 7,62-mm-DT-MG',
+    armor:'Front: 35 mm, Seite: 25 mm, Turm: 25 mm',
+    desc:'Der T-60 leichter Panzer wurde als Ersatz für den T-26 eingeführt. Einfach zu bauen und zu warten, war er in der Infanterieunterstützung nützlich, gegen Panzer aber nahezu machtlos. Gebaut in Traktorenwerken mitten im Krieg.' },
+  { id:'s006', name:'T-70',               type:'MBT',           nation:'UdSSR',       era:'WW2',          diff:'leicht',
+    weapon:'45-mm-20K-Kanone, 7,62-mm-DT-MG',
+    armor:'Front: 45 mm, Seite: 35 mm, Turm: 35 mm',
+    desc:'Der T-70 war der meistproduzierte sowjetische Leichtpanzer (8.226 Stück). Trotz seiner limitierten Kampfkraft spielte er eine wichtige Rolle bei der Panzerunterstützung der Infanterie bis 1943, als er durch schwerere Typen ersetzt wurde.' },
+
+  // ── KALTER KRIEG ─────────────────────────────────────────────────────────
+  { id:'v008', name:'BMP-2',              type:'IFV',   nation:'UdSSR',       era:'Kalter Krieg', diff:'mittel',
+    weapon:'30-mm-2A42-Maschinenkanone, 9M113-Konkurs-ATGM, 7,62-mm-PKT-MG',
+    armor:'Front: 33 mm (70° geneigt), Seite: 19 mm, Heck: 16 mm',
+    desc:'Der BMP-2 verbesserte den BMP-1 durch die leistungsstarke 30-mm-Maschinenkanone, die auch Hubschrauber bekämpfen kann. Amphibisch und hoch mobil, gilt er als einer der einflussreichsten Schützenpanzer der Geschichte.' },
+  { id:'s025', name:'BMP-1',              type:'IFV',   nation:'UdSSR',       era:'Kalter Krieg', diff:'mittel',
+    weapon:'73-mm-2A28-Grom-Glattrohr, 9M14-Maljutka-ATGM, 7,62-mm-PKT',
+    armor:'Front: 19 mm, Seite: 16 mm – Schutz gegen Kleinwaffen und Splitter',
+    desc:'Der BMP-1 war 1966 weltweit der erste in Serie gefertigte Schützenpanzer und revolutionierte das Konzept der kombinierten Waffen. Die Besatzung konnte durch Schießscharten kämpfen, während das Fahrzeug in Deckung fuhr.' },
+  { id:'s019', name:'T-54',               type:'MBT',           nation:'UdSSR',       era:'Kalter Krieg', diff:'mittel',
+    weapon:'100-mm-D-10T-Kanone, 2× 7,62-mm-SGMT, 12,7-mm-DShK',
+    armor:'Front: 100 mm (60° geneigt ≈ 200 mm effektiv), Seite: 80 mm, Turm: hemispherisch 200 mm',
+    desc:'Der T-54 war ab 1949 das Rückgrat aller Warschauer-Pakt-Armeen und wurde mit über 86.000 Einheiten (T-54/55 zusammen) zum meistproduziertenPanzer der Geschichte. Er nahm an fast jedem Konflikt der Nachkriegszeit teil.' },
+  { id:'s020', name:'T-55',               type:'MBT',           nation:'UdSSR',       era:'Kalter Krieg', diff:'mittel',
+    weapon:'100-mm-D-10T2S-Kanone, 7,62-mm-SGMT, 12,7-mm-DShK',
+    armor:'Front: 100 mm (60° geneigt), Seite: 80 mm, Turm-Front: 200 mm; ABC-Schutz integriert',
+    desc:'Der T-55 (1958) war der erste Serienkreatpanzer der Welt mit vollständigem ABC-Schutzsystem. Eine Tauchausrüstung (OPVT) ermöglichte das Unterqueren von Flüssen bis 5 m Tiefe. Er ist bis heute in zahlreichen Armeen aktiv.' },
+  { id:'s021', name:'T-62',               type:'MBT',           nation:'UdSSR',       era:'Kalter Krieg', diff:'mittel',
+    weapon:'115-mm-U-5TS-Glattrohrkanone (erste Serienglattrohr weltweit), 7,62-mm-PKMT',
+    armor:'Front: 100 mm (60° geneigt), Seite: 80 mm, Turm-Front: 242 mm',
+    desc:'Der T-62 (1961) war weltweit der erste Kampfpanzer mit Glattrohrkanone in Serie. Das verschossene Patronenhülsen-Auswerfsystem warf die Hülsen automatisch aus dem Turm. Im Jom-Kippur-Krieg 1973 massiv eingesetzt.' },
+  { id:'s022', name:'T-64',               type:'MBT',           nation:'UdSSR',       era:'Kalter Krieg', diff:'schwer',
+    weapon:'125-mm-2A46-Glattrohrkanone mit Autoloader, 7,62-mm-PKT, 12,7-mm-NSWt',
+    armor:'Kombinierte Stahl-Keramik-Verbundpanzerung, Front ca. 450 mm RHA-Äquivalent',
+    desc:'Der T-64 war 1964 seiner Zeit weit voraus: erster Serien-Autoloader, kombinierte Verbundpanzerung, kompakter Motor. Er war so teuer, dass er nie exportiert wurde und nur in Eliteeinheiten diente. Technisch Vorläufer aller modernen sowjetischen Panzer.' },
+  { id:'s023', name:'T-72',               type:'MBT',           nation:'UdSSR',       era:'Kalter Krieg', diff:'mittel',
+    weapon:'125-mm-2A46-Glattrohrkanone, Karussell-Autoloader, 7,62-mm-PKT, 12,7-mm-NSWt',
+    armor:'Front: Stahl/Quarzsand/Stahl-Verbund ca. 500 mm RHA-Äquivalent; Kontakt-1-ERA optional',
+    desc:'Der T-72 (1973) ist nach dem T-54/55 der weltweit am häufigsten exportierte Panzer und Basis für zahlreiche Varianten. Der Karussell-Autoloader erlaubt 6–8 Schuss/min. Umstritten wegen hoher Verluste im Golfkrieg 1991 gegen den Abrams.' },
+  { id:'s024', name:'T-80',               type:'MBT',           nation:'UdSSR',       era:'Kalter Krieg', diff:'schwer',
+    weapon:'125-mm-2A46M-Kanone, 9M112-Kobra-ATGM durch Rohr, 7,62-mm-PKT, 12,7-mm-NSWt',
+    armor:'Kombination Stahl-Keramik, Kontakt-5-ERA (T-80U), Front ca. 530 mm RHA-Äquivalent',
+    desc:'Der T-80 (1976) ist der einzige Kampfpanzer der Welt mit Gasturbine (GTD-1000T, 1.000 PS) als Serienantrieb. Er ermöglicht sehr schnelle Beschleunigung, verbraucht aber extrem viel Kraftstoff. Schlechte Erfahrungen in Tschetschenien (1994/95).' },
+  { id:'s026', name:'BTR-60',             type:'APC',   nation:'UdSSR',       era:'Kalter Krieg', diff:'leicht',
+    weapon:'14,5-mm-KPWT-HMG, 7,62-mm-PKT',
+    armor:'Front: 11 mm, Seite: 7 mm – geschweißter Stahl, 8×8-Antrieb',
+    desc:'Der BTR-60 (1960) war der erste sowjetische 8×8-Rad-Panzertransporter in Serie. Er ist amphibisch und transportiert 14 Soldaten. Trotz bekannter Anfälligkeit des Benzinmotors wurde er in allen Warschauer-Pakt-Armeen eingesetzt.' },
+  { id:'s027', name:'BTR-80',             type:'APC',   nation:'UdSSR',       era:'Kalter Krieg', diff:'leicht',
+    weapon:'14,5-mm-KPWT-HMG, 7,62-mm-PKT',
+    armor:'Front: 10 mm Panzerstahl, Seite: 9 mm – Gesamtgewicht 13,6 t',
+    desc:'Der BTR-80 (1986) ist ein amphibischer 8×8-Schützenpanzer mit Diesel- statt Benzinmotor. Die seitliche Hecktür ermöglicht das Aussteigen auch unter Beschuss. Er ist in über 26 Ländern im Einsatz und wurde im Tschetschenienkrieg massiv genutzt.' },
+  { id:'s028', name:'BRDM-2',             type:'IR',        nation:'UdSSR',       era:'Kalter Krieg', diff:'leicht',
+    weapon:'14,5-mm-KPWT-HMG, 7,62-mm-PKT',
+    armor:'Front: 14 mm, Seite: 7 mm – 4×4-Amphibienspähwagen',
+    desc:'Der BRDM-2 (1963) ist ein vielseitiger Spähwagen mit zwei zusätzlichen Hilfslaufrädern für schwieriges Gelände. Er ist amphibisch und wird weltweit als Aufklärer und ATGM-Träger (Variante 9P148) eingesetzt.' },
+  { id:'s029', name:'ZSU-23-4 Schilka',   type:'Air Defence',        nation:'UdSSR',       era:'Kalter Krieg', diff:'mittel',
+    weapon:'4× 23-mm-AZP-23-Maschinenkanone (kombiniert 3.400 Schuss/min), Radarsystem RP-9',
+    armor:'Front: 15 mm, Seite: 9,4 mm – Aluminium für Gewichtsreduktion',
+    desc:'Die ZSU-23-4 Schilka (1965) ist ein selbstfahrendes Flugabwehrsystem, das mit Radar Ziele bis 2.500 m Höhe bekämpft. Sie machte den israelischen Piloten im Jom-Kippur-Krieg 1973 das Leben zur Hölle und revolutionierte die Flugabwehrtaktik.' },
+  { id:'s030', name:'2S1 Gwosdika',       type:'Artillery', nation:'UdSSR',      era:'Kalter Krieg', diff:'mittel',
+    weapon:'122-mm-2A18-Haubitze, 40 Schuss Munitionsvorrat',
+    armor:'Front: 20 mm Aluminium – leicht gepanzerter Selbstfahrlafette, amphibisch',
+    desc:'Die 2S1 Gwosdika (Nelke, 1972) ist eine leichte amphibische Selbstfahrhaubitze auf Basis des MT-LB. Sie kann direkt Flüsse durchschwimmen und war in fast allen Warschauer-Pakt-Staaten im Dienst. Reichweite bis 15,3 km.' },
+  { id:'s031', name:'2S3 Akazija',        type:'Artillery', nation:'UdSSR',      era:'Kalter Krieg', diff:'mittel',
+    weapon:'152,4-mm-2A33-Haubitze, 7,62-mm-PKT-MG (Selbstschutz)',
+    armor:'Front: 30 mm Stahl – mittlerer Splitterschutz',
+    desc:'Die 2S3 Akazija (Akazie, 1971) ist eine schwere Selbstfahrhaubitze mit 152-mm-Kaliber. Reichweite: 17,4 km (konventionell) / 24 km (RAP). Sie dient als divisionale Artillerie und ist noch immer in Russland und vielen Ex-Sowjetstaaten aktiv.' },
+  { id:'s033', name:'BMD-1',              type:'IFV',   nation:'UdSSR',       era:'Kalter Krieg', diff:'schwer',
+    weapon:'73-mm-2A28-Grom-Kanone, 9M14-Maljutka-ATGM, 2× 7,62-mm-PKT',
+    armor:'Front: 23 mm Aluminium, Seite: 15 mm – per Fallschirm abwerfbar',
+    desc:'Der BMD-1 (1969) ist ein luftbeweglicher Schützenpanzer der Fallschirmjäger. Einzigartig ist die Möglichkeit, ihn mit Besatzung per Fallschirm abzuwerfen (PRSM-Plattform). Er bildet die Basis für mehrere sowjetische Luftlandefahrzeuge.' },
+
+  // ── MODERN ───────────────────────────────────────────────────────────────
+  { id:'s034', name:'T-90',               type:'MBT',           nation:'Russland',    era:'Modern',       diff:'mittel',
+    weapon:'125-mm-2A46M-Kanone, 9M119-Refleks-ATGM durch Rohr, 7,62-mm-PKT, 12,7-mm-NSWt',
+    armor:'Kontakt-5-ERA, Verbundstahl-Keramik-Front ca. 800 mm RHA-Äqu.; Shtora-1-Aktiv-Schutz-System',
+    desc:'Der T-90 (1993) war ursprünglich ein verbesserter T-72 und wurde Russlands Exportschlager. Das Shtora-1-System stört feindliche ATGM-Zielsysteme mit IR-Jammern und Aerosolwerfern. Über 1.000 exportiert (Indien, Algerien u. a.).' },
+  { id:'s035', name:'T-90M Proryv',        type:'MBT',          nation:'Russland',    era:'Modern',       diff:'schwer',
+    weapon:'125-mm-2A46M-5-Kanone, 9M119M1-Invar-M-ATGM, 12,7-mm-Kord-Fernbedienstation',
+    armor:'Relikt-ERA, neuer Schweißturm mit verbesserter Verbundpanzerung, Front ca. 900 mm RHA-Äqu.',
+    desc:'Der T-90M Proryv (Durchbruch, 2016/2020) ist die modernste russische Serienversion mit neuer Waffenstation, verbessertem Feuerleitcomputer und Wärmebildkamera. Als Reaktion auf westliche Kampfpanzer entwickelt.' },
+  { id:'s036', name:'T-80U',               type:'MBT',          nation:'Russland',    era:'Modern',       diff:'schwer',
+    weapon:'125-mm-2A46M-Kanone, 9M119-Refleks-ATGM, 7,62-mm-PKT, 12,7-mm-NSWt',
+    armor:'Kontakt-5-ERA auf Stahl-Keramik-Basis, Front ca. 800 mm RHA-Äquivalent',
+    desc:'Der T-80U (1985) ist die leistungsstärkste Gasturbinen-Panzervariante. Trotz exzellenter Leistung (80 km/h) litt er in Tschetschenien unter Wartungsproblemen und Anfälligkeit beim Turm-Munitionsbrand.' },
+  { id:'s037', name:'T-80BVM',             type:'MBT',          nation:'Russland',    era:'Modern',       diff:'schwer',
+    weapon:'125-mm-2A46M-4-Kanone, 9M119M1-Invar-M-ATGM, 12,7-mm-Kord-RWS',
+    armor:'Relikt-ERA, modernisierter Stahl-Keramik-Verbund, Drozd-2-APS (geplant)',
+    desc:'Der T-80BVM (2017) ist die jüngste Modernisierung des T-80B mit Relikt-ERA, neuem Feuerleitrechnersystem, Nachtsichtgeräten der 3. Generation und einer Fernbedienungswaffe. Im Ukraine-Krieg ab 2022 eingesetzt.' },
+  { id:'s038', name:'T-14 Armata',          type:'MBT',         nation:'Russland',    era:'Modern',       diff:'schwer',
+    weapon:'125-mm-2A82-1M-Kanone (2A83 152mm in Entwicklung), 12,7-mm-Kord-RWS, 7,62-mm-PKTM',
+    armor:'Malachit-ERA, Afganit-Aktiv-Schutz-System (APS), unbemannte Wanne, Front >900 mm RHA-Äqu.',
+    desc:'Der T-14 Armata (2015) ist konzeptionell revolutionär: Die dreiköpfige Besatzung sitzt in einer gepanzerten Kapsel im Rumpf, der Turm ist völlig unbemannt und ferngesteuert. Das Afganit-APS soll Raketen in der Luft abfangen. In Kleinserie.' },
+  { id:'s039', name:'BMP-3',               type:'IFV',  nation:'Russland',    era:'Modern',       diff:'mittel',
+    weapon:'100-mm-2A70-Kanone + 30-mm-2A72-Maschinenkanone (koaxial), 9M117-Bastion-ATGM, 3× 7,62-mm-PKT',
+    armor:'Front: 60 mm Aluminium (60° geneigt), Seite: 43 mm – vollständig amphibisch',
+    desc:'Der BMP-3 (1987) ist ein hochbewaffneter Schützenpanzer mit einer einzigartigen Kombination aus Mittelkaliber-Kanone und Maschinenkanone im selben Turm. Er gilt als einer der bestbewaffneten IFV weltweit und ist in 14 Ländern im Einsatz.' },
+  { id:'s040', name:'BTR-82A',              type:'IFV', nation:'Russland',    era:'Modern',       diff:'mittel',
+    weapon:'30-mm-2A72-Maschinenkanone, 7,62-mm-PKTM',
+    armor:'Stahl, STANAG-Niveau 1-2 frontal, ergänzende ERA-Pakete möglich – 8×8-Rad',
+    desc:'Der BTR-82A (2013) ist die modernste russische BTR-Variante mit Stabilisierter 30-mm-Kanone und verbesserten Schutzsystemen. Er ersetzt nach und nach den BTR-80 in der russischen Armee und wurde im Krieg in der Ukraine intensiv genutzt.' },
+  { id:'s041', name:'2S19 Msta-S',          type:'Artillery', nation:'Russland', era:'Modern',       diff:'mittel',
+    weapon:'152,4-mm-2A65-Haubitze, 12,7-mm-NSWt-MG; Reichweite: 28 km (konv.) / 40 km (Krasnopol)',
+    armor:'Front: 20 mm Panzerstahl – Besatzungsschutz gegen Splitter; Gesamtgewicht 42 t',
+    desc:'Die 2S19 Msta-S (1989) ist die Standard-Schwerhaubitze der russischen Armee auf T-72-Fahrwerk. Sie kann lasergelenkte Krasnopol-Munition verschießen und hat ein halbautomatisches Ladesystem (6–8 Schuss/min). Weit exportiert.' },
+  { id:'s042', name:'2S25 Sprut-SD',         type:'Artillery', nation:'Russland', era:'Modern',      diff:'schwer',
+    weapon:'125-mm-2A75-Kanone (identisch T-80/T-90), 9M119-Refleks-ATGM, 7,62-mm-PKT',
+    armor:'Front: 43 mm Aluminium – luftbeweglicher Panzerjäger, vollständig amphibisch',
+    desc:'Die 2S25 Sprut-SD (2005) ist ein luftbeweglicher Panzerjäger der Luftlandetruppen. Er trägt die gleiche Kanone wie der T-90, ist per Il-76 transportierbar und kann schwimmen. Konzipiert als Reaktion auf westliche Schützenpanzer mit ATGM.' },
+  { id:'s043', name:'TOS-1A Solnzepchjok',   type:'Artillery',    nation:'Russland',    era:'Modern',       diff:'schwer',
+    weapon:'24× 220-mm-Thermobarik-Raketenwerfer (Reichweite 6 km), Salve in 6 Sekunden',
+    armor:'Front wie T-72-Chassis – Raketenwerfer auf T-72-Basis montiert',
+    desc:'Die TOS-1A (Sonnenbrenner, 2001) ist ein schweres Flammenwerfer-Raketensystem auf T-72-Fahrwerk. Thermobarische Munition erzeugt Druckwellen und überhitzten Sauerstoff, die in Gebäuden, Tunneln und Schützengräben vernichtend wirken. Eingesetzt in Syrien.' },
+  { id:'s044', name:'BMPT Terminator',        type:'IFV',   nation:'Russland',    era:'Modern',       diff:'schwer',
+    weapon:'2× 30-mm-2A42-MK, 4× Ataka-T-ATGM, 2× 30-mm-AG-17D-Granatwerfer, 7,62-mm-PKTM',
+    armor:'Kontakt-5-ERA auf T-90-Chassis, Front ca. 800 mm RHA-Äquivalent',
+    desc:'Der BMPT Terminator (2002/2017) ist ein Panzerunterstützungsfahrzeug entwickelt nach den Verlusten in Tschetschenien. Er soll Kampfpanzer gegen Infanterie, RPG-Schützen und Hubschrauber schützen. Im Ukraine-Krieg in begrenzten Stückzahlen eingesetzt.' },
+  { id:'s045', name:'T-72B3',                 type:'MBT',      nation:'Russland',    era:'Modern',       diff:'mittel',
+    weapon:'125-mm-2A46M-5-Kanone, 9M119M-Refleks-ATGM, 7,62-mm-PKT, 12,7-mm-NSWt',
+    armor:'Kontakt-5-ERA (B3) / Relikt-ERA (B3M), verbesserter Stahl-Verbund, Front ca. 750 mm RHA-Äqu.',
+    desc:'Der T-72B3 (2012) ist die Hauptmodernisierung des T-72B mit neuen Sichtsystemen, verbesserter Kanone und modernem Feuerleitrechner. Er ist das Standardfahrzeug der russischen Streitkräfte im Ukraine-Krieg (2022) und wird in großer Zahl eingesetzt.' },
+  { id:'s046', name:'2S35 Koalizija-SW',      type:'Artillery', nation:'Russland', era:'Modern',    diff:'schwer',
+    weapon:'152-mm-2A88-Haubitze, vollautomatischer Lader; Reichweite bis 80 km (RAP/Gleit-Munition)',
+    armor:'Leicht gepanzert auf T-90-Chassis, geschlossene Kampfkammer – Gesamtgewicht 48 t',
+    desc:'Die 2S35 Koalizija-SW (Koalition, 2015) ist die modernste russische Selbstfahrhaubitze mit vollautomatischem Ladesystem (10–15 Schuss/min) und der Fähigkeit zum simultanen Mehrfacheinschlag (MRSI). Reichweite mit neuer Munition bis 80 km geplant.' },
+
+  // ── UKRAINE-KONFLIKT – ZUSÄTZLICHE FAHRZEUGE ─────────────────────────────
+
+  // MBT
+  { id:'u001', name:'T-64BV',               type:'MBT',         nation:'Ukraine',   era:'Modern',       diff:'mittel',
+    weapon:'125-mm-KBA-3-Glattrohrkanone, 9M112-Kobra-ATGM durch Rohr, 12,7-mm-NSWt-HMG, 7,62-mm-PKT',
+    armor:'Kombinierte Stahl-Keramik-Verbundpanzerung + Kontakt-1-ERA, Front ca. 550 mm RHA-Äquivalent',
+    desc:'Der T-64BV ist Ukraines meistgenutzter Kampfpanzer und die wichtigste Plattform der ukrainischen Streitkräfte seit 2022. Die Kontakt-1-ERA schützt gegen ältere Hohlladungsgeschosse. Ukraine produzierte den T-64 ursprünglich in Charkiw und unterhält umfangreiche Ersatzteilvorräte.' },
+  { id:'u002', name:'T-72B',                type:'MBT',         nation:'UdSSR',     era:'Kalter Krieg', diff:'mittel',
+    weapon:'125-mm-2A46M-Glattrohrkanone, 9M119-Refleks-ATGM, 7,62-mm-PKT, 12,7-mm-NSWt',
+    armor:'Eingebettete Reaktivstoffschichten im Gießturm + Kontakt-1-ERA, Front ca. 600 mm RHA-Äquivalent',
+    desc:'Der T-72B (1985) ist eine erheblich verbesserte Variante mit eingelassenem Reaktivstoff in der Turmfüllung und ERA. Im Ukraine-Krieg wird er auf beiden Seiten in großer Zahl eingesetzt und ist neben dem T-72B3 das häufigste russische Panzerfahrzeug im Gefecht.' },
+  { id:'u003', name:'T-80BV',               type:'MBT',         nation:'UdSSR',     era:'Kalter Krieg', diff:'schwer',
+    weapon:'125-mm-2A46M-Kanone, 9M112-Kobra-ATGM durch Rohr, 7,62-mm-PKT, 12,7-mm-NSWt',
+    armor:'Kontakt-1-ERA auf T-80B-Basis, kombinierte Stahl-Keramik-Panzerung, Front ca. 650 mm RHA-Äquivalent',
+    desc:'Der T-80BV rüstete den T-80B mit Kontakt-1-ERA nach. Im Ukraine-Krieg erwies er sich als anfällig für moderne ATGMs an den Flanken. Die Gasturbine liefert exzellente Mobilität, verbraucht aber extrem viel Kraftstoff – ein logistischer Schwachpunkt im langen Krieg.' },
+
+  // IFV
+  { id:'u005', name:'BMD-2',                type:'IFV',         nation:'UdSSR',     era:'Kalter Krieg', diff:'mittel',
+    weapon:'30-mm-2A42-Maschinenkanone, 9M113-Konkurs-ATGM, 7,62-mm-PKT',
+    armor:'Front: 23 mm Aluminium (luftbeweglich), Seite: 15 mm – per Fallschirm abwerfbar',
+    desc:'Der BMD-2 (1985) ersetzte die schwache 73-mm-Grom-Kanone des BMD-1 durch die 30-mm-2A42. Er ist das Standard-IFV der russischen VDV-Luftlandetruppen und wurde vom ersten Tag des Ukraine-Krieges an eingesetzt – beim Angriff auf Hostomel-Flughafen (Februar 2022).' },
+  { id:'u006', name:'BMD-4M',               type:'IFV',         nation:'Russland',  era:'Modern',       diff:'schwer',
+    weapon:'100-mm-2A70-Kanone + 30-mm-2A72-Maschinenkanone (koaxial), 9M117-Bastion-ATGM, 2× 7,62-mm-PKT',
+    armor:'Front: 18 mm + optionale ERA-Pakete, Gesamtgewicht 13,5 t – vollständig luftbeweglicher Einsatz',
+    desc:'Der BMD-4M ist das modernste russische Luftlandekampffahrzeug mit identischer Bewaffnung wie der BMP-3. Er gibt VDV-Einheiten BMP-3-Feuerkraft bei Il-76-Transportierbarkeit. Im Ukraine-Krieg ab 2022 von der 7. Garde-Gebirgsluftlanddivision eingesetzt.' },
+
+  // APC
+  { id:'u007', name:'MT-LB',                type:'APC',         nation:'UdSSR',     era:'Kalter Krieg', diff:'leicht',
+    weapon:'7,62-mm-PKT-MG (Grundversion) – als Träger für ZU-23-2, KPWT oder ATGM umrüstbar',
+    armor:'Front: 14 mm, Seite: 7 mm Stahl – leichter Splitterschutz, schwimmfähig',
+    desc:'Der MT-LB (Mehrzweck-Zugfahrzeug) ist das am häufigsten gesichtete gepanzerte Fahrzeug im Ukraine-Krieg auf beiden Seiten. Er dient als APC, Artilleriezugmaschine, ATGM-Träger und Panzertransporter. Seine Einfachheit, Wartbarkeit und Verfügbarkeit in Hunderttausenden Exemplaren machen ihn unverzichtbar.' },
+  { id:'u008', name:'BTR-70',               type:'APC',         nation:'UdSSR',     era:'Kalter Krieg', diff:'leicht',
+    weapon:'14,5-mm-KPWT-HMG, 7,62-mm-PKT',
+    armor:'Front: 9 mm, Seite: 7 mm Stahl – charakteristische seitliche Ausstiegslücken zwischen den Achsen',
+    desc:'Der BTR-70 (1972) ist eine Weiterentwicklung des BTR-60 mit verbessertem Twinmotor. Im Ukraine-Krieg noch vereinzelt auf russischer Seite als Reserve eingesetzt. Die seitlichen Ausstiegslücken sind sein markantestes Erkennungsmerkmal, ermöglichen aber nur eingeschränktes Verlassen unter Beschuss.' },
+
+  // ARTILLERY
+  { id:'u009', name:'BM-21 Grad',           type:'Artillery',   nation:'UdSSR',     era:'Kalter Krieg', diff:'leicht',
+    weapon:'40× 122-mm-Raketen, Reichweite bis 40 km, vollständige Salve in unter 20 Sekunden',
+    armor:'Kein Panzerschutz – auf Ural-375D/4320-LKW-Chassis montiert, Gewicht 13,7 t',
+    desc:'Der BM-21 Grad (Hagel, 1963) ist das meistgenutzte Mehrfachraketenwerfer-System im Ukraine-Krieg – auf beiden Seiten. Seine 40 Raketen sättigen Flächen von mehreren Hektar. Mit über 2.000 produzierten Systemen in mehr als 50 Ländern ist er das verbreitetste MLRS der Geschichte.' },
+  { id:'u010', name:'BM-27 Uragan',         type:'Artillery',   nation:'UdSSR',     era:'Kalter Krieg', diff:'mittel',
+    weapon:'16× 220-mm-Raketen, Reichweite bis 35 km, Submunition- und Minenstreuvarianten',
+    armor:'Kein Panzerschutz – auf ZIL-135-8×8-LKW-Chassis montiert, Gewicht 20 t',
+    desc:'Der BM-27 Uragan (Hurrikan, 1975) ist ein schweres MLRS, das im Ukraine-Krieg intensiv zur Flächenbeschießung eingesetzt wird. Submunitions-Varianten können riesige Gebiete mit Blindgängern verseuchen. Beide Seiten nutzen es; die Ukraine setzt vor allem aus alten Sowjetbeständen ein.' },
+  { id:'u011', name:'BM-30 Smerch',         type:'Artillery',   nation:'UdSSR',     era:'Kalter Krieg', diff:'mittel',
+    weapon:'12× 300-mm-Raketen, Reichweite bis 90 km, präzisionsgelenkte Varianten (9M544/9M549) verfügbar',
+    armor:'Kein Panzerschutz – auf MAZ-543M-8×8-Schwerlaster montiert, Gesamtgewicht 43,7 t',
+    desc:'Der BM-30 Smerch (Tornado, 1989) ist das mächtigste sowjetische/russische MLRS mit 300-mm-Raketen und bis zu 90 km Reichweite. Im Ukraine-Krieg von Russland gezielt gegen Logistikziele, Depots und Stellungen hinter der Front eingesetzt. Jede Rakete wiegt 800 kg.' },
+  { id:'u012', name:'2S4 Tjulpan',          type:'Artillery',   nation:'UdSSR',     era:'Kalter Krieg', diff:'schwer',
+    weapon:'240-mm-M240-Mörser – schwerster selbstfahrender Mörser der Welt, Reichweite 9,6 km (Raketen-Granate: 20 km)',
+    armor:'Front: 30 mm Stahl auf MT-LB-ähnlichem Fahrwerk, Gesamtgewicht 27,5 t',
+    desc:'Die 2S4 Tjulpan (Tulpe, 1975) ist der schwerste Serienproduktionsmörser der Welt. Jede Granate wiegt bis zu 130 kg. Im Ukraine-Krieg von Russland gegen befestigte Stadtgebiete und Bunkersysteme eingesetzt (Mariupol, Bachmut). Kann auch taktische Atomgranaten verschießen.' },
+  { id:'u013', name:'2S5 Giazint-S',        type:'Artillery',   nation:'UdSSR',     era:'Kalter Krieg', diff:'schwer',
+    weapon:'152,4-mm-2A37-Kanone, Reichweite 28 km (33 km mit RAP-Munition), Feuerrate 5–6 Schuss/min',
+    armor:'Offene Konstruktion – nur 7 mm Frontschutz, keine überdachte Kampfkammer',
+    desc:'Die 2S5 Giazint-S (Hyazinthe, 1976) ist eine leistungsstarke selbstfahrende Kanone mit großer Reichweite. Die offene Kampfkammer macht die Besatzung anfällig. Im Ukraine-Krieg für Gegenbatteriebekämpfung und Präzisionsschläge auf Kommandostellen eingesetzt.' },
+  { id:'u014', name:'2S7 Pion',             type:'Artillery',   nation:'UdSSR',     era:'Kalter Krieg', diff:'schwer',
+    weapon:'203,2-mm-2A44-Kanone, Reichweite 47,5 km (55 km mit RAP) – längstes Kaliber in Europa',
+    armor:'Völlig offene Konstruktion, keine Kampfkammer – reine Geschütz-Plattform auf Kettenfahrwerk',
+    desc:'Die 2S7 Pion (Pfingstrose, 1975) ist das mächtigste selbstfahrende Artillerierohr Europas (203 mm). Kann taktische Nukleargeschosse abfeuern. Im Ukraine-Krieg von Russland gegen ultrahart befestigte Stellungen und städtische Ziele eingesetzt, etwa in Mariupol (2022).' },
+  { id:'u015', name:'2S9 Nona-S',           type:'Artillery',   nation:'UdSSR',     era:'Kalter Krieg', diff:'schwer',
+    weapon:'120-mm-2A51-Kombikanone (verschießt Mörsergranaten, Raketen und Standard-Artilleriemunition)',
+    armor:'Front: 23 mm Aluminium, Gesamtgewicht 8,7 t – per Fallschirm aus Il-76 abwerfbar',
+    desc:'Die 2S9 Nona-S (1985) ist die Artillerie der sowjetischen Luftlandetruppen und einzigartig durch ihre Fähigkeit, drei verschiedene 120-mm-Munitionstypen zu verschießen. Im Ukraine-Krieg von russischen VDV-Einheiten eingesetzt. Sehr leicht und luftbeweglicher als jede andere SP-Haubitze.' },
+
+  // AIR DEFENCE
+  { id:'u016', name:'9K22 Tunguska',        type:'Air Defence',  nation:'UdSSR',    era:'Kalter Krieg', diff:'mittel',
+    weapon:'2× 30-mm-2A38M-Maschinenkanone (5.000 Schuss/min) + 8× 9M311-SAM (Reichweite 8 km, Höhe 3.500 m)',
+    armor:'Front: 10 mm Stahl, schwimmfähig – auf GM-352-Raupenfahrwerk, Gewicht 34 t',
+    desc:'Die 9K22 Tunguska (1982) kombiniert Flak-Kanonen mit Kurzstreckenraketen auf einem Fahrgestell. Im Ukraine-Krieg konnte sie moderne Drohnen (Bayraktar TB2) und westliche Lenkraketen oft nicht effektiv abwehren. Mehrere Fahrzeuge wurden durch ukrainische Drohnen zerstört.' },
+  { id:'u017', name:'Pantsir-S1',           type:'Air Defence',  nation:'Russland', era:'Modern',       diff:'mittel',
+    weapon:'2× 30-mm-2A72-Kanone + 12× 57E6-SAM (Reichweite 20 km, Höhe 15 km), eigenes Radar',
+    armor:'Kein Eigenschutz – auf BAZ-6306-8×8-LKW oder Kettenfahrwerk, Systemgewicht 20–24 t',
+    desc:'Das Pantsir-S1 (Harnisch, 2012) ist Russlands modernes kombiniertes Kurzstrecken-Luftabwehrsystem. Im Ukraine-Krieg hat es trotz moderner Technik erhebliche Verluste erlitten – zahlreiche Fahrzeuge wurden durch ukrainische Drohnen und HARM-Anti-Strahlungsraketen zerstört, oft bei laufendem Radar.' },
+  { id:'u018', name:'Buk-M1',               type:'Air Defence',  nation:'UdSSR',    era:'Kalter Krieg', diff:'mittel',
+    weapon:'4× 9M38-SAM-Raketen pro Abschusslader, Reichweite 25 km, Wirkungshöhe 22 km',
+    armor:'Kein Eigenschutz – radargesteuertes SAM-System auf Kettenfahrwerk (TELAR), Gewicht 32 t',
+    desc:'Das Buk-M1 (Buche, 1979) wurde durch den Abschuss von Flug MH17 (Juli 2014) über der Ukraine international bekannt. Im Ukraine-Krieg auf beiden Seiten eingesetzt, wobei ukrainische Kräfte mehrere russische Systeme abschossen. Es kann gleichzeitig bis zu 6 Ziele verfolgen.' },
+  { id:'u019', name:'9K35 Strela-10',       type:'Air Defence',  nation:'UdSSR',    era:'Kalter Krieg', diff:'mittel',
+    weapon:'4× 9M37-SAM-Raketen, passive Infrarot-Zielführung, Reichweite 5 km, Höhe 3.500 m',
+    armor:'Front: 6 mm auf MT-LB-Fahrwerk – leicht und mobil, Gesamtgewicht 12,3 t',
+    desc:'Das 9K35 Strela-10 (Pfeil, 1977) ist ein leichtes mobiles Luftabwehrsystem auf MT-LB-Basis ohne Radar – es nutzt passive Infrarot-Ortung, was es schwerer elektronisch zu stören macht. Im Ukraine-Krieg auf beiden Seiten im Einsatz, aber angesichts moderner Jets und Drohnen begrenzt wirksam.' },
+  { id:'u020', name:'Tor-M1',               type:'Air Defence',  nation:'UdSSR',    era:'Kalter Krieg', diff:'schwer',
+    weapon:'8× 9M330-SAM-Raketen, aktives Radar (Reichweite 12 km, Höhe 6 km), vollautomatischer Feuermodus',
+    armor:'Leicht gepanzert auf GM-5955-Raupenfahrwerk, Gesamtgewicht 34 t – kann während der Fahrt feuern',
+    desc:'Das Tor-M1 (1986) ist ein vollintegriertes Nahbereichs-Luftabwehrsystem mit eigenem Such- und Feuerleitradar. Einzigartig: Es kann während der Fahrt feuern. Im Ukraine-Krieg von Russland eingesetzt und von der Ukraine erbeutet. Gilt als effektiver gegen Marschflugkörper als die Tunguska.' },
+
+  // ── IFV-UPGRADE ───────────────────────────────────────────────────────────
+  { id:'s047', name:'BMP-2M',               type:'IFV',          nation:'Russland',  era:'Modern',       diff:'schwer',
+    weapon:'30-mm-2A42-Maschinenkanone, 4× 9M133 Kornet-ATGM (Reichweite 5,5 km), 7,62-mm-PKT-MG',
+    armor:'Front: 33 mm (70° geneigt), Seite: 19 mm, Heck: 16 mm; zusätzliche ERA-Pakete möglich',
+    desc:'Der BMP-2M ist die umfangreichste Modernisierungsstufe des BMP-2. Das markanteste Merkmal ist der neue Berezhok-Turm mit vier Kornet-Panzerabwehrlenkraketen statt des älteren Konkurs-Systems. Die verbesserte Feuerleitkontrolle erlaubt gleichzeitigen Abschuss zweier Kornet auf dasselbe Ziel. Im Ukraine-Krieg vielfach eingesetzt.' },
+
+  // ── MINE CLEARING ─────────────────────────────────────────────────────────
+  { id:'s048', name:'BMR-2',                type:'Mine Clearing', nation:'UdSSR',    era:'Kalter Krieg', diff:'mittel',
+    weapon:'12,7-mm-NSVT-MG (Selbstschutz), KMT-7-Rollenschneider-Minenräumanlage vorn',
+    armor:'Basiert auf T-55-Fahrwerk; Front: 100 mm, Seite: 80 mm – volle Panzerung für Minenräumeinsätze',
+    desc:'Der BMR-2 (Боевая Машина Разминирования, Kampf-Räumfahrzeug) basiert auf dem T-55-Fahrwerk und ist mit dem KMT-7-Rollenräumer ausgestattet. Er dient zur Erkundung und Minenräumung unter Beschuss. Im Afghanistan-Einsatz der Sowjetunion erstmals in großem Maßstab genutzt; zählt zur Pionierausrüstung der russischen Landstreitkräfte.' },
+
+  { id:'s049', name:'BMR-3',                type:'Mine Clearing', nation:'Russland', era:'Modern',       diff:'mittel',
+    weapon:'12,7-mm-NSVT-MG (Selbstschutz), KMT-7/KMT-8-Rollenräumer oder UR-77-Sprengschnuranlage',
+    armor:'Basiert auf T-72-Fahrwerk; Front: 450 mm (kompositgepanzert), Seite: Kontakt-ERA-Pakete',
+    desc:'Der BMR-3 (1996) ist der direkte Nachfolger des BMR-2 und basiert auf dem modernen T-72B-Fahrwerk. Dank der stärkeren Panzerung des T-72-Rumpfes überlebt das Fahrzeug auch Sprengfallen und Panzerminen beim Räumvorgang. Er trägt einen KMT-7- oder KMT-8-Rollenräumer und kann zusätzlich mit einem UR-77-Sprengschnursystem ausgestattet werden.' },
+
+  { id:'s050', name:'BMR-3M',               type:'Mine Clearing', nation:'Russland', era:'Modern',       diff:'schwer',
+    weapon:'12,7-mm-NSVT-MG (Selbstschutz), KMT-8-Kombinations-Rollenräumer, UR-83P-Sprengschnuranlage',
+    armor:'Basiert auf T-90A-Fahrwerk; Front: 800+ mm (Verbundpanzer + Kontakt-5-ERA), Seite: ERA + NERA',
+    desc:'Der BMR-3M ist die modernisierte Version des BMR-3 auf dem leistungsstärkeren T-90A-Fahrwerk mit verbesserter Kontakt-5-ERA. Die neue KMT-8-Räumanlage kann magnetische und Druckminen gleichzeitig auslösen. Eine eingebaute Spurmarkierung erleichtert nachfolgenden Fahrzeugen das sichere Befahren geräumter Gassen. Im Ukraine-Krieg aktiv eingesetzt.' },
+];
+
+// Eingebettete Bilder – wird beim Admin-Export befüllt; alle Nutzer sehen dieselben Bilder
+const BAKED_IMAGES = {};
+
+// ===================== STORAGE-MODUL =====================
+const Storage = {
+  KEY_DB:     'tankquiz_db',
+  KEY_SCORES: 'tankquiz_scores',
+  KEY_PW:     'tankquiz_pw',
+  KEY_FB:     'tankquiz_firebase_url',
+  imgKey: id => `tankquiz_images_${id}`,
+  getFirebaseUrl() { return (localStorage.getItem(this.KEY_FB) || '').trim().replace(/\/$/, ''); },
+  setFirebaseUrl(url) { localStorage.setItem(this.KEY_FB, url.trim().replace(/\/$/, '')); },
+
+  // Fahrzeuge laden
+  loadVehicles() {
+    const raw = localStorage.getItem(this.KEY_DB);
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch { return null; }
+  },
+
+  // Fahrzeuge speichern
+  saveVehicles(vehicles) {
+    localStorage.setItem(this.KEY_DB, JSON.stringify(vehicles));
+  },
+
+  // Bilder eines Fahrzeugs laden – gibt Array von {src, diff} zurück
+  // Lokale Uploads haben Vorrang; danach BAKED_IMAGES (vom Admin in die Datei eingebettet)
+  loadImages(vehicleId) {
+    const raw = localStorage.getItem(this.imgKey(vehicleId));
+    if (raw) {
+      try {
+        const data = JSON.parse(raw);
+        return data.map(item => typeof item === 'string' ? { src: item, diff: 'mittel' } : item);
+      } catch { return []; }
+    }
+    const baked = BAKED_IMAGES[vehicleId];
+    if (baked && baked.length > 0) {
+      return baked.map(item => typeof item === 'string' ? { src: item, diff: 'mittel' } : item);
+    }
+    return [];
+  },
+
+  // Bilder eines Fahrzeugs speichern – wirft QuotaExceededError wenn localStorage voll
+  saveImages(vehicleId, images) {
+    if (!images || images.length === 0) {
+      localStorage.removeItem(this.imgKey(vehicleId));
+    } else {
+      localStorage.setItem(this.imgKey(vehicleId), JSON.stringify(images)); // throws on quota
+    }
+  },
+
+  // Bild löschen
+  deleteImages(vehicleId) {
+    localStorage.removeItem(this.imgKey(vehicleId));
+  },
+
+  // Highscores laden
+  loadScores() {
+    const raw = localStorage.getItem(this.KEY_SCORES);
+    if (!raw) return [];
+    try { return JSON.parse(raw); } catch { return []; }
+  },
+
+  // Highscore speichern
+  saveScore(entry) {
+    const scores = this.loadScores();
+    scores.push(entry);
+    scores.sort((a, b) => b.points - a.points);
+    const top = scores.slice(0, 20);
+    localStorage.setItem(this.KEY_SCORES, JSON.stringify(top));
+    return top;
+  },
+
+  // Highscores löschen
+  clearScores() {
+    localStorage.removeItem(this.KEY_SCORES);
+  },
+
+  // Admin-Passwort laden
+  loadPw() {
+    return localStorage.getItem(this.KEY_PW) || 'admin123';
+  },
+
+  // Passwort speichern
+  savePw(pw) {
+    localStorage.setItem(this.KEY_PW, pw);
+  },
+
+  // Komplette DB exportieren (Fahrzeuge + Bilder als JSON)
+  exportAll() {
+    const vehicles = this.loadVehicles() || [];
+    const images = {};
+    vehicles.forEach(v => {
+      const imgs = this.loadImages(v.id);
+      if (imgs.length > 0) images[v.id] = imgs;
+    });
+    return { vehicles, images, exportedAt: new Date().toISOString(), version: 1 };
+  },
+
+  // Komplette DB importieren
+  importAll(data) {
+    if (!data || !Array.isArray(data.vehicles)) throw new Error('Ungültiges Format');
+    const existing = this.loadVehicles() || [];
+    const existingIds = new Set(existing.map(v => v.id));
+    let added = 0, updated = 0;
+    data.vehicles.forEach(v => {
+      if (existingIds.has(v.id)) {
+        const idx = existing.findIndex(e => e.id === v.id);
+        existing[idx] = v;
+        updated++;
+      } else {
+        existing.push(v);
+        added++;
+      }
+    });
+    this.saveVehicles(existing);
+    if (data.images) {
+      Object.entries(data.images).forEach(([id, imgs]) => {
+        this.saveImages(id, imgs);
+      });
+    }
+    return { added, updated };
+  },
+
+  // Alles zurücksetzen
+  resetAll() {
+    const vehicles = this.loadVehicles() || [];
+    vehicles.forEach(v => this.deleteImages(v.id));
+    localStorage.removeItem(this.KEY_DB);
+  }
+};
+
+// ===================== FIREBASE-MODUL =====================
+const Firebase = {
+  url() { return Storage.getFirebaseUrl(); },
+
+  async submitScore(entry) {
+    const u = this.url();
+    if (!u) return false;
+    try {
+      const res = await fetch(`${u}/scores.json`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry)
+      });
+      return res.ok;
+    } catch { return false; }
+  },
+
+  async loadScores() {
+    const u = this.url();
+    if (!u) return [];
+    try {
+      const res = await fetch(`${u}/scores.json?orderBy="points"&limitToLast=20`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      if (!data || typeof data !== 'object') return [];
+      return Object.values(data).sort((a, b) => b.points - a.points).slice(0, 20);
+    } catch { return []; }
+  },
+
+  async clearScores() {
+    const u = this.url();
+    if (!u) return;
+    try { await fetch(`${u}/scores.json`, { method: 'DELETE' }); } catch {}
+  }
+};
+
+// ===================== window.tankDB =====================
+// Globales Objekt für den aktuellen Stand der Fahrzeugdatenbank
+window.tankDB = {
+  vehicles: [],
+
+  // Datenbank initialisieren – fehlende Einträge ergänzen, veraltete nicht-sowjetische entfernen
+  init() {
+    // IDs der früheren nicht-sowjetischen Standardfahrzeuge
+    const REMOVED_IDS = new Set(['v001','v002','v004','v005','v006','v007','v009','v010',
+      's008','s009','s010','s011','s012','s013','s014','s015','s016','s017','s018',
+      's001','s002','s003','s004','s032','u004',
+      'v003','s007']);
+    let data = Storage.loadVehicles();
+    if (!data || data.length === 0) {
+      this.vehicles = DEFAULT_VEHICLES.map(v => ({ ...v }));
+      Storage.saveVehicles(this.vehicles);
+    } else {
+      // Alte nicht-sowjetische Fahrzeuge (DE/USA/UK) aus DB entfernen
+      data = data.filter(v => !REMOVED_IDS.has(v.id));
+      const existingIds = new Set(data.map(v => v.id));
+      const toAdd = DEFAULT_VEHICLES.filter(v => !existingIds.has(v.id));
+      this.vehicles = toAdd.length > 0 ? [...data, ...toAdd.map(v => ({ ...v }))] : data;
+      Storage.saveVehicles(this.vehicles);
+    }
+  },
+
+  // Fahrzeug nach ID finden
+  getById(id) {
+    return this.vehicles.find(v => v.id === id);
+  },
+
+  // Fahrzeug hinzufügen
+  add(vehicle) {
+    this.vehicles.push(vehicle);
+    Storage.saveVehicles(this.vehicles);
+  },
+
+  // Fahrzeug aktualisieren
+  update(vehicle) {
+    const idx = this.vehicles.findIndex(v => v.id === vehicle.id);
+    if (idx >= 0) {
+      this.vehicles[idx] = vehicle;
+      Storage.saveVehicles(this.vehicles);
+    }
+  },
+
+  // Fahrzeug löschen
+  delete(id) {
+    this.vehicles = this.vehicles.filter(v => v.id !== id);
+    Storage.saveVehicles(this.vehicles);
+    Storage.deleteImages(id);
+  },
+
+  // Zufällige Auswahl von Fahrzeugen (für Quiz)
+  getQuizVehicles(options = {}) {
+    let pool = [...this.vehicles];
+    // Nur UdSSR/Russland/Ukraine-Fahrzeuge (alle postsowjetischen Nationen)
+    const VALID_NATIONS = new Set(['UdSSR', 'Russland', 'Ukraine']);
+    pool = pool.filter(v => VALID_NATIONS.has(v.nation));
+    // Nach Kategorien filtern (leer = alle Kategorien)
+    if (options.categories && options.categories.length > 0) {
+      pool = pool.filter(v => options.categories.includes(v.type));
+    }
+    if (options.diff) {
+      const FALLBACK = { leicht: 'mittel', mittel: 'leicht', schwer: 'mittel' };
+      const exact = pool.filter(v => v.diff === options.diff);
+      if (exact.length >= 4) {
+        pool = exact;
+      } else {
+        const fb = FALLBACK[options.diff];
+        const extended = pool.filter(v => v.diff === options.diff || v.diff === fb);
+        pool = extended.length >= 4 ? extended : pool;
+      }
+    }
+    return pool;
+  },
+
+  // Alle Nationen (unique)
+  nations() {
+    return [...new Set(this.vehicles.map(v => v.nation))].sort();
+  },
+
+  // Alle Typen (unique)
+  types() {
+    return [...new Set(this.vehicles.map(v => v.type))].sort();
+  }
+};
+
+// ===================== QUIZ-ENGINE =====================
+const QuizEngine = {
+  state: null,
+
+  // Neue Quiz-Runde starten
+  start(options) {
+    const pool = window.tankDB.getQuizVehicles(options);
+    if (pool.length < 4) {
+      UI.toast('Nicht genug Fahrzeuge in der Datenbank (mind. 4 benötigt)', 'error');
+      return false;
+    }
+    const count = Math.min(options.count || 10, pool.length);
+    // Fragen zusammenstellen: zufällige Fahrzeuge aus dem Pool
+    const shuffled = this._shuffle([...pool]);
+    const questions = shuffled.slice(0, count).map(vehicle => {
+      // 3 falsche Antworten aus den übrigen Fahrzeugen
+      const others = pool.filter(v => v.id !== vehicle.id);
+      const wrong = this._shuffle(others).slice(0, 3);
+      // Antwort-Text je nach Schwierigkeit
+      const answerText = v => options.diff === 'leicht' ? v.type : v.name;
+      const answers = this._shuffle([vehicle, ...wrong]).map(v => ({
+        id: v.id,
+        text: answerText(v),
+        correct: v.id === vehicle.id
+      }));
+      return { vehicle, answers };
+    });
+
+    this.state = {
+      questions,
+      current: 0,
+      score: 0,
+      correct: 0,
+      streak: 0,
+      maxStreak: 0,
+      options,
+      answered: false
+    };
+    return true;
+  },
+
+  // Aktuelle Frage
+  currentQuestion() {
+    return this.state ? this.state.questions[this.state.current] : null;
+  },
+
+  // Antwort verarbeiten
+  answer(answerId) {
+    if (!this.state || this.state.answered) return;
+    this.state.answered = true;
+    const q = this.currentQuestion();
+    const selected = q.answers.find(a => a.id === answerId);
+    const correct = q.answers.find(a => a.correct);
+    const isCorrect = selected && selected.correct;
+
+    if (isCorrect) {
+      this.state.correct++;
+      this.state.streak++;
+      this.state.maxStreak = Math.max(this.state.maxStreak, this.state.streak);
+      // Punkte: Basis + Streak-Bonus
+      const pts = 100 + (this.state.streak - 1) * 20;
+      this.state.score += pts;
+    } else {
+      this.state.streak = 0;
+    }
+    return { isCorrect, correctId: correct.id };
+  },
+
+  // Zur nächsten Frage
+  next() {
+    if (!this.state) return;
+    this.state.current++;
+    this.state.answered = false;
+    if (this.state.current >= this.state.questions.length) {
+      UI.showResult();
+    } else {
+      UI.renderQuestion();
+    }
+  },
+
+  // Ergebnisse
+  getResult() {
+    if (!this.state) return null;
+    const total = this.state.questions.length;
+    const correct = this.state.correct;
+    return {
+      correct, total,
+      pct: Math.round(correct / total * 100),
+      points: this.state.score,
+      maxStreak: this.state.maxStreak,
+      diff: this.state.options.diff
+    };
+  },
+
+  // Fisher-Yates Shuffle
+  _shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+};
+
+// ===================== ADMIN-PANEL =====================
+const AdminPanel = {
+  currentTab: 'vehicles',
+  editingId: null,
+
+  // Tab wechseln
+  switchTab(tab) {
+    this.currentTab = tab;
+    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    document.getElementById(`tabp-${tab}`).classList.add('active');
+    if (tab === 'vehicles') this.renderTable();
+    if (tab === 'images')   this.populateImageSelect();
+    if (tab === 'settings') this.renderInfo();
+  },
+
+  // Fahrzeugtabelle rendern
+  renderTable() {
+    const search   = (document.getElementById('v-search')?.value  || '').toLowerCase();
+    const typFlt   = document.getElementById('v-filter-type')?.value  || '';
+    const diffFlt  = document.getElementById('v-filter-diff')?.value  || '';
+    let vehicles   = window.tankDB.vehicles;
+
+    if (search)  vehicles = vehicles.filter(v => v.name.toLowerCase().includes(search));
+    if (typFlt)  vehicles = vehicles.filter(v => v.type  === typFlt);
+    if (diffFlt) vehicles = vehicles.filter(v => v.diff  === diffFlt);
+
+    document.getElementById('v-count').textContent = window.tankDB.vehicles.length;
+    const tbody = document.getElementById('vehicles-tbody');
+    if (vehicles.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">&#128269;</div>Keine Fahrzeuge gefunden</div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = vehicles.map(v => {
+      const imgs = Storage.loadImages(v.id);
+      // Bild-Übersicht: Anzahl je Schwierigkeit
+      const imgCounts = { leicht:0, mittel:0, schwer:0 };
+      imgs.forEach(img => { if (imgCounts[img.diff] !== undefined) imgCounts[img.diff]++; });
+      const imgInfo = imgs.length === 0 ? '–'
+        : `${imgs.length} 🖼 <span style="font-size:.75rem;color:var(--text-dim)">`
+        + `<span style="color:#70d080">${imgCounts.leicht}L</span> `
+        + `<span style="color:#d0a030">${imgCounts.mittel}M</span> `
+        + `<span style="color:#d05050">${imgCounts.schwer}S</span></span>`;
+      return `<tr>
+        <td><strong>${this._esc(v.name)}</strong><br><span style="font-size:.75rem;color:var(--text-dim)">${this._esc(v.era)}</span></td>
+        <td><span class="badge badge-type">${this._esc(v.type)}</span></td>
+        <td><span class="badge badge-diff-${v.diff}">${v.diff}</span></td>
+        <td>${imgInfo}</td>
+        <td>
+          <button class="btn btn-secondary btn-sm" onclick="AdminPanel.editVehicle('${v.id}')">&#9998;</button>
+          <button class="btn btn-danger btn-sm" onclick="AdminPanel.deleteVehicle('${v.id}')">&#128465;</button>
+        </td>
+      </tr>`;
+    }).join('');
+  },
+
+  // Filter sind jetzt statisch im HTML – kein dynamisches Befüllen nötig
+  populateFilters() {},
+
+  // Fahrzeug bearbeiten (in Tab "Hinzufügen" laden)
+  editVehicle(id) {
+    const v = window.tankDB.getById(id);
+    if (!v) return;
+    this.switchTab('add');
+    document.getElementById('edit-id').value  = v.id;
+    document.getElementById('f-name').value   = v.name;
+    document.getElementById('f-type').value   = v.type;
+    document.getElementById('f-nation').value = v.nation;
+    document.getElementById('f-era').value    = v.era;
+    document.getElementById('f-diff').value   = v.diff;
+    document.getElementById('f-desc').value   = v.desc   || '';
+    document.getElementById('f-weapon').value = v.weapon || '';
+    document.getElementById('f-armor').value  = v.armor  || '';
+    document.getElementById('add-form-title').textContent = `Fahrzeug bearbeiten: ${v.name}`;
+    document.getElementById('f-name').focus();
+  },
+
+  // Formular zurücksetzen
+  resetForm() {
+    document.getElementById('edit-id').value = '';
+    document.getElementById('f-name').value  = '';
+    document.getElementById('f-type').value  = 'MBT';
+    document.getElementById('f-nation').value = '';
+    document.getElementById('f-era').value   = 'WW2';
+    document.getElementById('f-diff').value   = 'mittel';
+    document.getElementById('f-desc').value   = '';
+    document.getElementById('f-weapon').value = '';
+    document.getElementById('f-armor').value  = '';
+    document.getElementById('add-form-title').textContent = 'Neues Fahrzeug';
+  },
+
+  // Fahrzeug speichern (neu oder bearbeiten)
+  saveVehicle() {
+    const name   = document.getElementById('f-name').value.trim();
+    const type   = document.getElementById('f-type').value;
+    const nation = document.getElementById('f-nation').value.trim();
+    const era    = document.getElementById('f-era').value;
+    const diff   = document.getElementById('f-diff').value;
+    const desc   = document.getElementById('f-desc').value.trim();
+    const weapon = document.getElementById('f-weapon').value.trim();
+    const armor  = document.getElementById('f-armor').value.trim();
+    const editId = document.getElementById('edit-id').value;
+
+    if (!name || !nation) { UI.toast('Name und Nation sind Pflichtfelder', 'error'); return; }
+
+    if (editId) {
+      window.tankDB.update({ id: editId, name, type, nation, era, diff, desc, weapon, armor });
+      UI.toast(`"${name}" aktualisiert`, 'success');
+    } else {
+      const id = 'v' + Date.now();
+      window.tankDB.add({ id, name, type, nation, era, diff, desc, weapon, armor });
+      UI.toast(`"${name}" hinzugefügt`, 'success');
+    }
+    this.resetForm();
+    this.renderTable();
+    this.populateImageSelect();
+    UI.populateNationSelect();
+  },
+
+  // Fahrzeug löschen
+  deleteVehicle(id) {
+    const v = window.tankDB.getById(id);
+    if (!v) return;
+    if (!confirm(`Fahrzeug "${v.name}" wirklich löschen?`)) return;
+    window.tankDB.delete(id);
+    this.renderTable();
+    UI.toast(`"${v.name}" gelöscht`);
+  },
+
+  // Bild-Select befüllen
+  populateImageSelect() {
+    const sel = document.getElementById('img-vehicle-select');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">-- Fahrzeug wählen --</option>';
+    window.tankDB.vehicles.forEach(v => {
+      const o = document.createElement('option');
+      o.value = v.id;
+      o.textContent = `${v.name} (${v.nation})`;
+      sel.appendChild(o);
+    });
+    if (current) sel.value = current;
+    this.loadImagePreview();
+  },
+
+  // Bildvorschau laden – mit Schwierigkeit-Selector pro Bild
+  loadImagePreview() {
+    const id = document.getElementById('img-vehicle-select').value;
+    const container = document.getElementById('img-previews');
+    container.innerHTML = '';
+    if (!id) return;
+    const images = Storage.loadImages(id);
+    if (images.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-dim);font-size:.85rem;padding:8px">Noch keine Bilder für dieses Fahrzeug</div>';
+      return;
+    }
+    images.forEach((img, idx) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'img-thumb';
+      const d = img.diff || 'mittel';
+      wrap.innerHTML = `
+        <img src="${img.src}" alt="Bild ${idx+1}">
+        <select class="img-diff-sel" title="Schwierigkeit dieses Bildes"
+          onchange="AdminPanel.setImageDiff('${id}', ${idx}, this.value)">
+          <option value="leicht"${d==='leicht'?' selected':''}>🟢 Leicht</option>
+          <option value="mittel"${d==='mittel'?' selected':''}>🟡 Mittel</option>
+          <option value="schwer"${d==='schwer'?' selected':''}>🔴 Schwer</option>
+        </select>
+        <button class="del-btn" onclick="AdminPanel.deleteImage('${id}', ${idx})">✕</button>`;
+      container.appendChild(wrap);
+    });
+  },
+
+  // Schwierigkeit eines einzelnen Bildes setzen
+  setImageDiff(vehicleId, idx, diff) {
+    const images = Storage.loadImages(vehicleId);
+    if (!images[idx]) return;
+    images[idx].diff = diff;
+    Storage.saveImages(vehicleId, images);
+    this.renderTable();
+    UI.toast(`Bild ${idx + 1}: Schwierigkeit → ${diff}`);
+  },
+
+  // Bild-URL direkt hinzufügen (kein localStorage-Limit, ideal für viele Bilder)
+  addImageUrl() {
+    const id = document.getElementById('img-vehicle-select').value;
+    if (!id) { UI.toast('Bitte zuerst ein Fahrzeug auswählen', 'error'); return; }
+    const url = document.getElementById('img-url-input').value.trim();
+    if (!url) { UI.toast('Bitte eine URL eingeben', 'error'); return; }
+    const diff = document.getElementById('img-url-diff').value;
+    const existing = Storage.loadImages(id);
+    existing.push({ src: url, diff });
+    try {
+      Storage.saveImages(id, existing);
+      document.getElementById('img-url-input').value = '';
+      this.loadImagePreview();
+      this.renderTable();
+      UI.toast('Bild-URL hinzugefügt', 'success');
+    } catch {
+      UI.toast('Speicherfehler – localStorage voll', 'error');
+    }
+  },
+
+  // Bild auf max. 900px verkleinern + JPEG 80% komprimieren → passt in localStorage
+  _compressImage(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = e => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          const MAX = 900;
+          const scale = img.width > MAX ? MAX / img.width : 1;
+          const canvas = document.createElement('canvas');
+          canvas.width  = Math.round(img.width  * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.80));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  },
+
+  // Bilder hochladen – als {src, diff} mit Standard-Schwierigkeit "mittel" speichern
+  async uploadImages(input) {
+    const id = document.getElementById('img-vehicle-select').value;
+    if (!id) { UI.toast('Bitte zuerst ein Fahrzeug auswählen', 'error'); input.value = ''; return; }
+    const files = Array.from(input.files);
+    if (!files.length) return;
+    UI.toast('Bilder werden komprimiert...', 'success');
+    const existing = Storage.loadImages(id);
+    let uploaded = 0;
+    for (const file of files) {
+      try {
+        const src = await this._compressImage(file);
+        existing.push({ src, diff: 'mittel' });
+        uploaded++;
+      } catch { UI.toast(`Fehler bei ${file.name}`, 'error'); }
+    }
+    if (uploaded > 0) {
+      try {
+        Storage.saveImages(id, existing);
+        this.loadImagePreview();
+        this.renderTable();
+        UI.toast(`${uploaded} Bild(er) hochgeladen – Schwierigkeit pro Bild unten wählbar`, 'success');
+      } catch (err) {
+        UI.toast('Speicher voll – Bilder zu groß. Weniger Bilder hochladen oder andere löschen.', 'error');
+      }
+    }
+    input.value = '';
+  },
+
+  // Bild löschen
+  deleteImage(vehicleId, idx) {
+    const images = Storage.loadImages(vehicleId);
+    images.splice(idx, 1);
+    Storage.saveImages(vehicleId, images);
+    this.loadImagePreview();
+    this.renderTable();
+    UI.toast('Bild gelöscht');
+  },
+
+  // DB exportieren
+  exportDB() {
+    const data = Storage.exportAll();
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `panzerquiz_export_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    UI.toast('Datenbank exportiert');
+  },
+
+  // DB importieren
+  importDB(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        const result = Storage.importAll(data);
+        window.tankDB.init();
+        this.renderTable();
+        this.populateImageSelect();
+        UI.populateNationSelect();
+        UI.toast(`Import: ${result.added} neu, ${result.updated} aktualisiert`, 'success');
+      } catch (err) {
+        UI.toast('Import fehlgeschlagen: ' + err.message, 'error');
+      }
+      input.value = '';
+    };
+    reader.readAsText(file);
+  },
+
+  // Passwort ändern
+  changePw() {
+    const pw = document.getElementById('new-pw').value.trim();
+    if (!pw || pw.length < 4) { UI.toast('Passwort muss mindestens 4 Zeichen haben', 'error'); return; }
+    Storage.savePw(pw);
+    document.getElementById('new-pw').value = '';
+    UI.toast('Passwort geändert', 'success');
+  },
+
+  // DB zurücksetzen
+  resetDB() {
+    if (!confirm('Wirklich alle Fahrzeuge löschen und Beispieldatenbank laden?')) return;
+    Storage.resetAll();
+    window.tankDB.init();
+    this.renderTable();
+    this.populateImageSelect();
+    this.populateFilters();
+    UI.populateNationSelect();
+    UI.toast('Datenbank zurückgesetzt', 'success');
+  },
+
+  // Firebase-URL speichern
+  setFirebaseUrl() {
+    const url = document.getElementById('fb-url').value.trim();
+    Storage.setFirebaseUrl(url);
+    UI.toast(url ? 'Firebase-URL gespeichert' : 'Firebase-URL gelöscht', 'success');
+  },
+
+  // Highscores löschen (lokal + Firebase)
+  async clearScores() {
+    if (!confirm('Alle Highscores löschen (lokal + global)?')) return;
+    Storage.clearScores();
+    await Firebase.clearScores();
+    UI.renderHighscores();
+    UI.toast('Highscores gelöscht', 'success');
+  },
+
+  // HTML mit eingebetteten Bildern exportieren – für GitHub-Upload
+  async exportWithImages() {
+    UI.toast('Wird vorbereitet...', 'success');
+    const allImages = {};
+    // Bilder aus localStorage sammeln (lokale Uploads haben Vorrang)
+    window.tankDB.vehicles.forEach(v => {
+      const raw = localStorage.getItem(Storage.imgKey(v.id));
+      if (raw) {
+        try {
+          const data = JSON.parse(raw);
+          allImages[v.id] = data.map(item => typeof item === 'string' ? { src: item, diff: 'mittel' } : item);
+        } catch {}
+      }
+    });
+    // Bereits eingebettete Bilder für Fahrzeuge ohne lokale Uploads behalten
+    Object.entries(BAKED_IMAGES).forEach(([id, imgs]) => {
+      if (!allImages[id]) allImages[id] = imgs;
+    });
+    try {
+      const response = await fetch(window.location.href);
+      let html = await response.text();
+      html = html.replace(
+        /\/\/ Eingebettete Bilder[^\n]*\nconst BAKED_IMAGES = \{[\s\S]*?\};/,
+        `// Eingebettete Bilder – wird beim Admin-Export befüllt; alle Nutzer sehen dieselben Bilder\nconst BAKED_IMAGES = ${JSON.stringify(allImages)};`
+      );
+      const blob = new Blob([html], { type: 'text/html' });
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = 'index.html';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+      UI.toast('index.html mit Bildern exportiert! → auf GitHub hochladen', 'success');
+    } catch (e) {
+      UI.toast('Export fehlgeschlagen: ' + e.message, 'error');
+    }
+  },
+
+  // Info-Block rendern + Firebase-URL vorausfüllen
+  renderInfo() {
+    document.getElementById('info-count').textContent = window.tankDB.vehicles.length;
+    const fbInput = document.getElementById('fb-url');
+    if (fbInput) fbInput.value = Storage.getFirebaseUrl();
+  },
+
+  // HTML escapen
+  _esc(str) {
+    return String(str)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+};
+
+// ===================== UI-MODUL =====================
+const UI = {
+  titleClickCount: 0,
+  titleClickTimer: null,
+  currentResult: null,
+
+  // App initialisieren
+  init() {
+    window.tankDB.init();
+    this.renderHighscores();
+    this.updateCatCount();
+    // Diff-Select Änderung aktualisiert auch den Zähler
+    document.getElementById('start-diff')?.addEventListener('change', () => this.updateCatCount());
+    // Drag-and-Drop für Bild-Upload
+    const uploadArea = document.getElementById('upload-area');
+    if (uploadArea) {
+      uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.style.borderColor = 'var(--amber)'; });
+      uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = 'var(--border)'; });
+      uploadArea.addEventListener('drop', e => {
+        e.preventDefault();
+        uploadArea.style.borderColor = 'var(--border)';
+        const input = document.getElementById('img-upload');
+        // DataTransfer-Dateien übergeben
+        const dt = new DataTransfer();
+        Array.from(e.dataTransfer.files).forEach(f => dt.items.add(f));
+        input.files = dt.files;
+        input.dispatchEvent(new Event('change'));
+      });
+    }
+  },
+
+  // Screen anzeigen
+  showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+    // Stats-Leiste
+    const showStats = id === 'quiz';
+    document.getElementById('header-stats').style.display = showStats ? 'flex' : 'none';
+  },
+
+  // Startscreen
+  showStart() {
+    this.renderHighscores();
+    this.showScreen('start');
+  },
+
+  // Admin-Bereich anzeigen (erst Login prüfen)
+  showAdmin() {
+    this.showScreen('login');
+    setTimeout(() => document.getElementById('login-pw').focus(), 100);
+  },
+
+  // Login verarbeiten
+  doLogin() {
+    const pw = document.getElementById('login-pw').value;
+    if (pw === Storage.loadPw()) {
+      document.getElementById('login-pw').value = '';
+      document.getElementById('login-err').style.display = 'none';
+      this.showScreen('admin');
+      AdminPanel.renderTable();
+      AdminPanel.populateFilters();
+      AdminPanel.populateImageSelect();
+    } else {
+      document.getElementById('login-err').style.display = 'block';
+      document.getElementById('login-pw').value = '';
+      document.getElementById('login-pw').focus();
+    }
+  },
+
+  // Titel 3x klicken → Admin
+  titleClick() {
+    this.titleClickCount++;
+    clearTimeout(this.titleClickTimer);
+    this.titleClickTimer = setTimeout(() => { this.titleClickCount = 0; }, 1500);
+    if (this.titleClickCount >= 3) {
+      this.titleClickCount = 0;
+      this.showAdmin();
+    }
+  },
+
+  // Quiz starten
+  startQuiz() {
+    const diff       = document.getElementById('start-diff').value;
+    const count      = parseInt(document.getElementById('start-count').value);
+    const categories = Array.from(document.querySelectorAll('.cat-cb:checked')).map(cb => cb.value);
+    const ok = QuizEngine.start({ diff, count, categories: categories.length > 0 ? categories : null });
+    if (!ok) return;
+    document.getElementById('stat-total').textContent = count;
+    this.showScreen('quiz');
+    this.renderQuestion();
+  },
+
+  // Quiz abbrechen
+  abortQuiz() {
+    if (confirm('Quiz wirklich abbrechen?')) this.showStart();
+  },
+
+  // Frage rendern
+  renderQuestion() {
+    const q   = QuizEngine.currentQuestion();
+    const st  = QuizEngine.state;
+    const idx = st.current;
+    const total = st.questions.length;
+
+    // Fortschritt
+    document.getElementById('q-num').textContent   = idx + 1;
+    document.getElementById('q-total').textContent = total;
+    document.getElementById('stat-q').textContent  = idx + 1;
+    document.getElementById('stat-score').textContent = st.score;
+    document.getElementById('stat-streak').textContent = st.streak;
+    document.getElementById('q-progress').style.width = (idx / total * 100) + '%';
+    // Schwierigkeit-Badge
+    const diffLabels = { leicht: '🟢 Leicht', mittel: '🟡 Mittel', schwer: '🔴 Schwer' };
+    document.getElementById('q-diff-badge').textContent = diffLabels[st.options.diff] || '';
+
+    // Fahrzeug-Bild – exakte Quiz-Schwierigkeit, dann Fallback-Schwierigkeit, dann beliebig
+    const allImages = Storage.loadImages(q.vehicle.id);
+    let imgSrc;
+    if (allImages.length > 0) {
+      const quizDiff = st.options.diff;
+      const IMG_FALLBACK = { leicht: 'mittel', mittel: 'leicht', schwer: 'mittel' };
+      let pool = allImages.filter(img => img.diff === quizDiff);
+      if (pool.length === 0) pool = allImages.filter(img => img.diff === IMG_FALLBACK[quizDiff]);
+      if (pool.length === 0) pool = allImages;
+      const chosen = pool[Math.floor(Math.random() * pool.length)];
+      imgSrc = chosen.src;
+    } else {
+      imgSrc = SVG_PLACEHOLDER(q.vehicle.name, '#4a5230');
+    }
+    const img = document.getElementById('vehicle-img');
+    img.src = imgSrc;
+    document.getElementById('vehicle-img-wrap').classList.remove('revealed');
+
+    // Antwort-Buttons
+    const grid = document.getElementById('answers-grid');
+    grid.innerHTML = q.answers.map(a =>
+      `<button class="answer-btn" onclick="UI.selectAnswer('${a.id}')" data-id="${a.id}">${a.text}</button>`
+    ).join('');
+
+    // Feedback ausblenden, Weiter-Button ausblenden
+    const fb = document.getElementById('feedback-box');
+    fb.className = 'feedback-box';
+    document.getElementById('btn-next').style.display = 'none';
+  },
+
+  // Antwort auswählen
+  selectAnswer(answerId) {
+    const result = QuizEngine.answer(answerId);
+    if (!result) return;
+
+    // Streak-Update
+    document.getElementById('stat-streak').textContent = QuizEngine.state.streak;
+    document.getElementById('stat-score').textContent  = QuizEngine.state.score;
+
+    // Antwort-Buttons einfärben
+    document.querySelectorAll('.answer-btn').forEach(btn => {
+      btn.disabled = true;
+      if (btn.dataset.id === result.correctId) btn.classList.add('correct');
+      else if (btn.dataset.id === answerId)     btn.classList.add('wrong');
+    });
+
+    // Feedback
+    const q  = QuizEngine.currentQuestion();
+    const fb = document.getElementById('feedback-box');
+    const verdict = document.getElementById('fb-verdict');
+    const info    = document.getElementById('fb-info');
+    const v = q.vehicle;
+    if (result.isCorrect) {
+      verdict.textContent = '✓ Richtig!';
+      fb.classList.add('show', 'fb-correct');
+      fb.classList.remove('fb-wrong');
+    } else {
+      const correct = q.answers.find(a => a.correct);
+      verdict.textContent = `✗ Falsch! Die richtige Antwort war: ${correct.text}`;
+      fb.classList.add('show', 'fb-wrong');
+      fb.classList.remove('fb-correct');
+    }
+    const weaponLine = v.weapon ? `<br><span style="color:#d4a017">&#128299; Bewaffnung:</span> ${v.weapon}` : '';
+    const armorLine  = v.armor  ? `<br><span style="color:#d4a017">&#128737; Panzerung:</span>  ${v.armor}`   : '';
+    info.innerHTML = `<strong>${v.name}</strong> (${v.type}, ${v.nation}, ${v.era})${v.desc ? '<br>' + v.desc : ''}${weaponLine}${armorLine}`;
+
+    // Weiter-Button
+    document.getElementById('btn-next').style.display = 'inline-flex';
+
+    // Auto-Weiter nach letzter Frage
+    const isLast = QuizEngine.state.current + 1 >= QuizEngine.state.questions.length;
+    if (isLast) {
+      document.getElementById('btn-next').textContent = 'Ergebnis anzeigen →';
+    }
+  },
+
+  // Ergebnis-Screen anzeigen
+  showResult() {
+    const res = QuizEngine.getResult();
+    this.currentResult = res;
+    document.getElementById('res-correct').textContent = res.correct;
+    document.getElementById('res-total').textContent   = res.total;
+    document.getElementById('res-pct').textContent     = res.pct + '%';
+    document.getElementById('res-streak').textContent  = res.maxStreak;
+    document.getElementById('res-pts').textContent     = res.points;
+    // Sterne
+    const stars = res.pct >= 90 ? '★★★' : res.pct >= 60 ? '★★☆' : '★☆☆';
+    document.getElementById('res-stars').textContent = stars;
+    // Score-Speicher-Feld zurücksetzen
+    document.getElementById('hs-name').value = '';
+    this.showScreen('result');
+  },
+
+  // Score in Bestenliste speichern (lokal + global via Firebase)
+  async saveScore() {
+    const name = document.getElementById('hs-name').value.trim() || 'Anonym';
+    const res  = this.currentResult;
+    if (!res) return;
+    const entry = {
+      name,
+      points: res.points,
+      correct: res.correct,
+      total: res.total,
+      diff: res.diff,
+      date: new Date().toLocaleDateString('de-DE')
+    };
+    Storage.saveScore(entry);
+    const global = await Firebase.submitScore(entry);
+    this.toast(`Gespeichert: ${name} – ${res.points} Punkte${global ? ' 🌐' : ''}`, 'success');
+    document.getElementById('hs-name').value = '';
+    this.renderHighscores();
+  },
+
+  // Bestenliste rendern – Firebase zuerst, lokal als Fallback
+  async renderHighscores() {
+    const box = document.getElementById('hs-list');
+    if (!box) return;
+    const hasFirebase = !!Storage.getFirebaseUrl();
+    if (hasFirebase) box.innerHTML = '<div style="color:var(--text-dim);padding:8px;font-size:.85rem">⏳ Lade globale Bestenliste...</div>';
+    let scores = hasFirebase ? await Firebase.loadScores() : [];
+    const label = scores.length > 0 ? '🌐 Global' : '💻 Lokal';
+    if (scores.length === 0) scores = Storage.loadScores();
+    if (!scores.length) {
+      box.innerHTML = '<div class="empty-state" style="padding:8px">Noch keine Einträge</div>';
+      return;
+    }
+    box.innerHTML = `<div style="font-size:.72rem;color:var(--text-dim);margin-bottom:4px;text-align:right">${label}</div>` +
+      scores.slice(0, 10).map((s, i) =>
+        `<div class="hs-row">
+          <span>${i+1}. ${s.name} <span style="color:var(--text-dim);font-size:.8rem">(${s.diff||'?'})</span></span>
+          <span class="hs-score">${s.points} Pkt – ${s.correct}/${s.total} – ${s.date}</span>
+        </div>`
+      ).join('');
+  },
+
+  // Verfügbare Fahrzeuge für gewählte Kategorien anzeigen
+  updateCatCount() {
+    const categories = Array.from(document.querySelectorAll('.cat-cb:checked')).map(cb => cb.value);
+    const diff = document.getElementById('start-diff')?.value || 'mittel';
+    const pool = window.tankDB.getQuizVehicles({ categories: categories.length > 0 ? categories : null, diff });
+    const el = document.getElementById('cat-count');
+    if (el) el.textContent = pool.length > 0 ? `${pool.length} Fahrzeuge verfügbar` : '⚠ Keine Fahrzeuge – Auswahl erweitern';
+    const btn = document.getElementById('btn-start');
+    if (btn) btn.disabled = pool.length < 4;
+  },
+
+  // Kategorie-Checkbox visuell umschalten
+  toggleCatLabel(label) {
+    // Kurze Verzögerung damit der checkbox-State sich zuerst updatet
+    setTimeout(() => {
+      label.classList.toggle('active', label.querySelector('input').checked);
+      this.updateCatCount();
+    }, 0);
+  },
+
+  // Kein Nationen-Select mehr – leere Stub-Funktion für Kompatibilität
+  populateNationSelect() {},
+
+  // Modal schließen
+  closeModal() {
+    document.getElementById('edit-modal').classList.remove('open');
+  },
+
+  // Toast-Benachrichtigung
+  toast(msg, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.textContent = msg;
+    container.appendChild(t);
+    setTimeout(() => {
+      t.style.opacity = '0';
+      t.style.transition = 'opacity .3s';
+      setTimeout(() => t.remove(), 300);
+    }, 3000);
+  }
+};
+
+// ===================== START =====================
+document.addEventListener('DOMContentLoaded', () => {
+  UI.init();
+});
+</script>
+</body>
+</html>
