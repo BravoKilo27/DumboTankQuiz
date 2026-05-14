@@ -651,10 +651,6 @@ const DEFAULT_VEHICLES = [
     weapon:'152,4-mm-2A33-Haubitze, 7,62-mm-PKT-MG (Selbstschutz)',
     armor:'Front: 30 mm Stahl – mittlerer Splitterschutz',
     desc:'Die 2S3 Akazija (Akazie, 1971) ist eine schwere Selbstfahrhaubitze mit 152-mm-Kaliber. Reichweite: 17,4 km (konventionell) / 24 km (RAP). Sie dient als divisionale Artillerie und ist noch immer in Russland und vielen Ex-Sowjetstaaten aktiv.' },
-  { id:'s033', name:'BMD-1',              type:'IFV',   nation:'UdSSR',       era:'Kalter Krieg', diff:'schwer',
-    weapon:'73-mm-2A28-Grom-Kanone, 9M14-Maljutka-ATGM, 2× 7,62-mm-PKT',
-    armor:'Front: 23 mm Aluminium, Seite: 15 mm – per Fallschirm abwerfbar',
-    desc:'Der BMD-1 (1969) ist ein luftbeweglicher Schützenpanzer der Fallschirmjäger. Einzigartig ist die Möglichkeit, ihn mit Besatzung per Fallschirm abzuwerfen (PRSM-Plattform). Er bildet die Basis für mehrere sowjetische Luftlandefahrzeuge.' },
 
   // ── MODERN ───────────────────────────────────────────────────────────────
   { id:'s034', name:'T-90',               type:'MBT',           nation:'Russland',    era:'Modern',       diff:'mittel',
@@ -1000,7 +996,7 @@ window.tankDB = {
     const REMOVED_IDS = new Set(['v001','v002','v004','v005','v006','v007','v009','v010',
       's008','s009','s010','s011','s012','s013','s014','s015','s016','s017','s018',
       's001','s002','s003','s004','s032','u004',
-      'v003','s007','s005','s006','s019','s020']);
+      'v003','s007','s005','s006','s019','s020','s033']);
     let data = Storage.loadVehicles();
     if (!data || data.length === 0) {
       this.vehicles = DEFAULT_VEHICLES.map(v => ({ ...v }));
