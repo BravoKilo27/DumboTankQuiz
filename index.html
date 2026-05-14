@@ -1556,6 +1556,7 @@ const UI = {
   titleClickCount: 0,
   titleClickTimer: null,
   currentResult: null,
+  currentScreen: 'start',
 
   // App initialisieren
   init() {
@@ -1584,6 +1585,7 @@ const UI = {
 
   // Screen anzeigen
   showScreen(id) {
+    this.currentScreen = id;
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-' + id).classList.add('active');
     // Stats-Leiste
@@ -1622,8 +1624,7 @@ const UI = {
 
   // Titel 3x klicken → Admin; 1x klicken während Quiz → Hauptmenü
   titleClick() {
-    if (document.getElementById('screen-quiz').classList.contains('active')) {
-      document.getElementById('header-stats').style.display = 'none';
+    if (this.currentScreen === 'quiz') {
       this.showStart();
       return;
     }
