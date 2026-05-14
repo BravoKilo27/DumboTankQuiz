@@ -1620,8 +1620,13 @@ const UI = {
     }
   },
 
-  // Titel 3x klicken → Admin
+  // Titel 3x klicken → Admin; 1x klicken während Quiz → Hauptmenü
   titleClick() {
+    if (document.getElementById('screen-quiz').classList.contains('active')) {
+      document.getElementById('header-stats').style.display = 'none';
+      this.showStart();
+      return;
+    }
     this.titleClickCount++;
     clearTimeout(this.titleClickTimer);
     this.titleClickTimer = setTimeout(() => { this.titleClickCount = 0; }, 1500);
