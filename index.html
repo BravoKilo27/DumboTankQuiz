@@ -803,10 +803,6 @@ const DEFAULT_VEHICLES = [
     armor:'Basiert auf T-72-Fahrwerk; Front: 450 mm (kompositgepanzert), Seite: Kontakt-ERA-Pakete',
     desc:'Der BMR-3 (1996) ist der direkte Nachfolger des BMR-2 und basiert auf dem modernen T-72B-Fahrwerk. Dank der stärkeren Panzerung des T-72-Rumpfes überlebt das Fahrzeug auch Sprengfallen und Panzerminen beim Räumvorgang. Er trägt einen KMT-7- oder KMT-8-Rollenräumer und kann zusätzlich mit einem UR-77-Sprengschnursystem ausgestattet werden.' },
 
-  { id:'s050', name:'BMR-3M',               type:'Mine Clearing', nation:'Russland', era:'Modern',       diff:'schwer',
-    weapon:'12,7-mm-NSVT-MG (Selbstschutz), KMT-8-Kombinations-Rollenräumer, UR-83P-Sprengschnuranlage',
-    armor:'Basiert auf T-90A-Fahrwerk; Front: 800+ mm (Verbundpanzer + Kontakt-5-ERA), Seite: ERA + NERA',
-    desc:'Der BMR-3M ist die modernisierte Version des BMR-3 auf dem leistungsstärkeren T-90A-Fahrwerk mit verbesserter Kontakt-5-ERA. Die neue KMT-8-Räumanlage kann magnetische und Druckminen gleichzeitig auslösen. Eine eingebaute Spurmarkierung erleichtert nachfolgenden Fahrzeugen das sichere Befahren geräumter Gassen. Im Ukraine-Krieg aktiv eingesetzt.' },
 ];
 
 // Eingebettete Bilder – wird beim Admin-Export befüllt; alle Nutzer sehen dieselben Bilder
@@ -988,7 +984,7 @@ window.tankDB = {
     const REMOVED_IDS = new Set(['v001','v002','v004','v005','v006','v007','v009','v010',
       's008','s009','s010','s011','s012','s013','s014','s015','s016','s017','s018',
       's001','s002','s003','s004','s032','u004',
-      'v003','s007','s005','s006','s019','s020','s033','u001','u003']);
+      'v003','s007','s005','s006','s019','s020','s033','u001','u003','s050']);
     let data = Storage.loadVehicles();
     if (!data || data.length === 0) {
       this.vehicles = DEFAULT_VEHICLES.map(v => ({ ...v }));
