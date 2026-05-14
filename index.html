@@ -1089,9 +1089,14 @@ const QuizEngine = {
     // Fragen zusammenstellen: zufällige Fahrzeuge aus dem Pool
     const shuffled = this._shuffle([...pool]);
     const questions = shuffled.slice(0, count).map(vehicle => {
-      // 3 falsche Antworten aus den übrigen Fahrzeugen
-      const others = pool.filter(v => v.id !== vehicle.id);
-      const wrong = this._shuffle(others).slice(0, 3);
+      // Falsche Antworten: mind. 1 (leicht) bzw. 2 (mittel/schwer) aus derselben Kategorie
+      const sameType = this._shuffle(pool.filter(v => v.id !== vehicle.id && v.type === vehicle.type));
+      const diffType = this._shuffle(pool.filter(v => v.id !== vehicle.id && v.type !== vehicle.type));
+      const sameNeeded = options.diff === 'leicht' ? 1 : 2;
+      const fromSame = sameType.slice(0, sameNeeded);
+      const fromDiff = diffType.slice(0, 3 - fromSame.length);
+      const extra = sameType.slice(fromSame.length);
+      const wrong = this._shuffle([...fromSame, ...fromDiff, ...extra]).slice(0, 3);
       // Antwort-Text je nach Schwierigkeit
       const answerText = v => options.diff === 'leicht' ? v.type : v.name;
       const answers = this._shuffle([vehicle, ...wrong]).map(v => ({
