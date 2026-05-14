@@ -955,7 +955,7 @@ const Firebase = {
 
   async loadScores() {
     try {
-      const res = await fetch(`${this.url()}/scores.json?orderBy="points"&limitToLast=10`);
+      const res = await fetch(`${this.url()}/scores.json`);
       if (!res.ok) return [];
       const data = await res.json();
       if (!data || typeof data !== 'object') return [];
