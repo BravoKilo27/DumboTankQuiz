@@ -939,13 +939,12 @@ const Storage = {
 
 // ===================== FIREBASE-MODUL =====================
 const Firebase = {
-  url() { return Storage.getFirebaseUrl(); },
+  BASE_URL: 'https://dumbotankquiz-default-rtdb.europe-west1.firebasedatabase.app',
+  url() { return this.BASE_URL; },
 
   async submitScore(entry) {
-    const u = this.url();
-    if (!u) return false;
     try {
-      const res = await fetch(`${u}/scores.json`, {
+      const res = await fetch(`${this.url()}/scores.json`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(entry)
@@ -955,21 +954,17 @@ const Firebase = {
   },
 
   async loadScores() {
-    const u = this.url();
-    if (!u) return [];
     try {
-      const res = await fetch(`${u}/scores.json?orderBy="points"&limitToLast=20`);
+      const res = await fetch(`${this.url()}/scores.json?orderBy="points"&limitToLast=10`);
       if (!res.ok) return [];
       const data = await res.json();
       if (!data || typeof data !== 'object') return [];
-      return Object.values(data).sort((a, b) => b.points - a.points).slice(0, 20);
+      return Object.values(data).sort((a, b) => b.points - a.points).slice(0, 10);
     } catch { return []; }
   },
 
   async clearScores() {
-    const u = this.url();
-    if (!u) return;
-    try { await fetch(`${u}/scores.json`, { method: 'DELETE' }); } catch {}
+    try { await fetch(`${this.url()}/scores.json`, { method: 'DELETE' }); } catch {}
   }
 };
 
@@ -1788,21 +1783,18 @@ const UI = {
     this.renderHighscores();
   },
 
-  // Bestenliste rendern – Firebase zuerst, lokal als Fallback
+  // Bestenliste rendern – global via Firebase
   async renderHighscores() {
     const box = document.getElementById('hs-list');
     if (!box) return;
-    const hasFirebase = !!Storage.getFirebaseUrl();
-    if (hasFirebase) box.innerHTML = '<div style="color:var(--text-dim);padding:8px;font-size:.85rem">⏳ Lade globale Bestenliste...</div>';
-    let scores = hasFirebase ? await Firebase.loadScores() : [];
-    const label = scores.length > 0 ? '🌐 Global' : '💻 Lokal';
-    if (scores.length === 0) scores = Storage.loadScores();
+    box.innerHTML = '<div style="color:var(--text-dim);padding:8px;font-size:.85rem">⏳ Lade globale Bestenliste...</div>';
+    const scores = await Firebase.loadScores();
     if (!scores.length) {
       box.innerHTML = '<div class="empty-state" style="padding:8px">Noch keine Einträge</div>';
       return;
     }
-    box.innerHTML = `<div style="font-size:.72rem;color:var(--text-dim);margin-bottom:4px;text-align:right">${label}</div>` +
-      scores.slice(0, 10).map((s, i) =>
+    box.innerHTML = `<div style="font-size:.72rem;color:var(--text-dim);margin-bottom:4px;text-align:right">🌐 Global Top 10</div>` +
+      scores.map((s, i) =>
         `<div class="hs-row">
           <span>${i+1}. ${s.name} <span style="color:var(--text-dim);font-size:.8rem">(${s.diff||'?'})</span></span>
           <span class="hs-score">${s.points} Pkt – ${s.correct}/${s.total} – ${s.date}</span>
