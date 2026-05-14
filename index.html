@@ -1060,17 +1060,6 @@ window.tankDB = {
     if (options.categories && options.categories.length > 0) {
       pool = pool.filter(v => options.categories.includes(v.type));
     }
-    if (options.diff) {
-      const FALLBACK = { leicht: 'mittel', mittel: 'leicht', schwer: 'mittel' };
-      const exact = pool.filter(v => v.diff === options.diff);
-      if (exact.length >= 4) {
-        pool = exact;
-      } else {
-        const fb = FALLBACK[options.diff];
-        const extended = pool.filter(v => v.diff === options.diff || v.diff === fb);
-        pool = extended.length >= 4 ? extended : pool;
-      }
-    }
     return pool;
   },
 
@@ -1697,14 +1686,17 @@ const UI = {
     const diffLabels = { leicht: '🟢 Leicht', mittel: '🟡 Mittel', schwer: '🔴 Schwer' };
     document.getElementById('q-diff-badge').textContent = diffLabels[st.options.diff] || '';
 
-    // Fahrzeug-Bild – exakte Quiz-Schwierigkeit, dann Fallback-Schwierigkeit, dann beliebig
+    // Bildauswahl: exakte Schwierigkeit → nächst leichtere → beliebig
     const allImages = Storage.loadImages(q.vehicle.id);
     let imgSrc;
     if (allImages.length > 0) {
       const quizDiff = st.options.diff;
-      const IMG_FALLBACK = { leicht: 'mittel', mittel: 'leicht', schwer: 'mittel' };
-      let pool = allImages.filter(img => img.diff === quizDiff);
-      if (pool.length === 0) pool = allImages.filter(img => img.diff === IMG_FALLBACK[quizDiff]);
+      const CHAIN = { schwer: ['schwer','mittel','leicht'], mittel: ['mittel','leicht'], leicht: ['leicht'] };
+      let pool = [];
+      for (const d of CHAIN[quizDiff] || ['mittel','leicht']) {
+        pool = allImages.filter(img => img.diff === d);
+        if (pool.length > 0) break;
+      }
       if (pool.length === 0) pool = allImages;
       const chosen = pool[Math.floor(Math.random() * pool.length)];
       imgSrc = chosen.src;
@@ -1835,8 +1827,7 @@ const UI = {
   // Verfügbare Fahrzeuge für gewählte Kategorien anzeigen
   updateCatCount() {
     const categories = Array.from(document.querySelectorAll('.cat-cb:checked')).map(cb => cb.value);
-    const diff = document.getElementById('start-diff')?.value || 'mittel';
-    const pool = window.tankDB.getQuizVehicles({ categories: categories.length > 0 ? categories : null, diff });
+    const pool = window.tankDB.getQuizVehicles({ categories: categories.length > 0 ? categories : null });
     const el = document.getElementById('cat-count');
     if (el) el.textContent = pool.length > 0 ? `${pool.length} Fahrzeuge verfügbar` : '⚠ Keine Fahrzeuge – Auswahl erweitern';
     const btn = document.getElementById('btn-start');
