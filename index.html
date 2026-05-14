@@ -709,10 +709,6 @@ const DEFAULT_VEHICLES = [
   // ── UKRAINE-KONFLIKT – ZUSÄTZLICHE FAHRZEUGE ─────────────────────────────
 
   // MBT
-  { id:'u001', name:'T-64BV',               type:'MBT',         nation:'Ukraine',   era:'Modern',       diff:'mittel',
-    weapon:'125-mm-KBA-3-Glattrohrkanone, 9M112-Kobra-ATGM durch Rohr, 12,7-mm-NSWt-HMG, 7,62-mm-PKT',
-    armor:'Kombinierte Stahl-Keramik-Verbundpanzerung + Kontakt-1-ERA, Front ca. 550 mm RHA-Äquivalent',
-    desc:'Der T-64BV ist Ukraines meistgenutzter Kampfpanzer und die wichtigste Plattform der ukrainischen Streitkräfte seit 2022. Die Kontakt-1-ERA schützt gegen ältere Hohlladungsgeschosse. Ukraine produzierte den T-64 ursprünglich in Charkiw und unterhält umfangreiche Ersatzteilvorräte.' },
   { id:'u002', name:'T-72B',                type:'MBT',         nation:'UdSSR',     era:'Kalter Krieg', diff:'mittel',
     weapon:'125-mm-2A46M-Glattrohrkanone, 9M119-Refleks-ATGM, 7,62-mm-PKT, 12,7-mm-NSWt',
     armor:'Eingebettete Reaktivstoffschichten im Gießturm + Kontakt-1-ERA, Front ca. 600 mm RHA-Äquivalent',
@@ -996,7 +992,7 @@ window.tankDB = {
     const REMOVED_IDS = new Set(['v001','v002','v004','v005','v006','v007','v009','v010',
       's008','s009','s010','s011','s012','s013','s014','s015','s016','s017','s018',
       's001','s002','s003','s004','s032','u004',
-      'v003','s007','s005','s006','s019','s020','s033']);
+      'v003','s007','s005','s006','s019','s020','s033','u001']);
     let data = Storage.loadVehicles();
     if (!data || data.length === 0) {
       this.vehicles = DEFAULT_VEHICLES.map(v => ({ ...v }));
