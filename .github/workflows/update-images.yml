@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'img/**'
+      - 'index.html'
 
 jobs:
   update-images:
