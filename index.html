@@ -713,10 +713,6 @@ const DEFAULT_VEHICLES = [
     weapon:'125-mm-2A46M-Glattrohrkanone, 9M119-Refleks-ATGM, 7,62-mm-PKT, 12,7-mm-NSWt',
     armor:'Eingebettete Reaktivstoffschichten im Gießturm + Kontakt-1-ERA, Front ca. 600 mm RHA-Äquivalent',
     desc:'Der T-72B (1985) ist eine erheblich verbesserte Variante mit eingelassenem Reaktivstoff in der Turmfüllung und ERA. Im Ukraine-Krieg wird er auf beiden Seiten in großer Zahl eingesetzt und ist neben dem T-72B3 das häufigste russische Panzerfahrzeug im Gefecht.' },
-  { id:'u003', name:'T-80BV',               type:'MBT',         nation:'UdSSR',     era:'Kalter Krieg', diff:'schwer',
-    weapon:'125-mm-2A46M-Kanone, 9M112-Kobra-ATGM durch Rohr, 7,62-mm-PKT, 12,7-mm-NSWt',
-    armor:'Kontakt-1-ERA auf T-80B-Basis, kombinierte Stahl-Keramik-Panzerung, Front ca. 650 mm RHA-Äquivalent',
-    desc:'Der T-80BV rüstete den T-80B mit Kontakt-1-ERA nach. Im Ukraine-Krieg erwies er sich als anfällig für moderne ATGMs an den Flanken. Die Gasturbine liefert exzellente Mobilität, verbraucht aber extrem viel Kraftstoff – ein logistischer Schwachpunkt im langen Krieg.' },
 
   // IFV
   { id:'u005', name:'BMD-2',                type:'IFV',         nation:'UdSSR',     era:'Kalter Krieg', diff:'mittel',
@@ -992,7 +988,7 @@ window.tankDB = {
     const REMOVED_IDS = new Set(['v001','v002','v004','v005','v006','v007','v009','v010',
       's008','s009','s010','s011','s012','s013','s014','s015','s016','s017','s018',
       's001','s002','s003','s004','s032','u004',
-      'v003','s007','s005','s006','s019','s020','s033','u001']);
+      'v003','s007','s005','s006','s019','s020','s033','u001','u003']);
     let data = Storage.loadVehicles();
     if (!data || data.length === 0) {
       this.vehicles = DEFAULT_VEHICLES.map(v => ({ ...v }));
